@@ -17,6 +17,7 @@ func main() {
 	var srcPath = flag.String("src-path", "", "Source path to annotate the unit with origin")
 	var trim = flag.Int("trim", 0, "Trim names for display purposes")
 	var noSpans = flag.Bool("no-spans", false, "Suppress span information in output")
+	var configFile = flag.String("rewrite", "", "YAML file containing rewrite rules")
 
 	flag.Parse()
 
@@ -26,8 +27,17 @@ func main() {
 		selectedFormat = *formatLong
 	}
 
-	p := parser.NewParser(os.Stdin, false)
+	var rewriteConfig *parser.RewriteConfig
 	var err error
+	if configFile != nil && *configFile != "" {
+		rewriteConfig, err = parser.LoadRewriteConfig(*configFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading rewrite configuration file: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	p := parser.NewParser(os.Stdin, false)
 	var node *parser.Node
 
 	// Select the appropriate print function based on format
@@ -41,7 +51,16 @@ func main() {
 	if srcPath != nil && *srcPath != "" {
 		tree.Options["src"] = *srcPath
 	}
+
+	var rewriter *parser.Rewriter
+	if rewriteConfig != nil {
+		rewriter = parser.NewRewriter(rewriteConfig)
+	}
+
 	for node, err = p.TryReadExpr(); node != nil; node, err = p.TryReadExpr() {
+		if rewriter != nil {
+			node = rewriter.Rewrite(node)
+		}
 		if len(tree.Children) == 0 {
 			tree.Span = node.Span
 		} else {

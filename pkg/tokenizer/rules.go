@@ -32,8 +32,7 @@ type BracketRule struct {
 
 // PrefixRule represents a prefix token rule
 type PrefixRule struct {
-	Text  string `yaml:"text"`
-	Arity Arity  `yaml:"arity,omitempty"` // Optional arity field
+	Text string `yaml:"text"`
 }
 
 // StartRule represents a start token rule
@@ -94,7 +93,7 @@ type CustomRuleEntry struct {
 type TokenizerRules struct {
 	StartTokens         map[string]StartTokenData
 	BridgeTokens        map[string]BridgeTokenData
-	PrefixTokens        map[string]PrefixTokenData
+	PrefixTokens        map[string]bool
 	DelimiterMappings   map[string][]string
 	DelimiterProperties map[string]DelimiterProp
 	WildcardTokens      map[string]bool
@@ -160,9 +159,9 @@ func ApplyRulesToDefaults(rules *RulesFile) (*TokenizerRules, error) {
 
 	// Apply prefix rules
 	if len(rules.Prefix) > 0 {
-		tokenizerRules.PrefixTokens = make(map[string]PrefixTokenData)
+		tokenizerRules.PrefixTokens = make(map[string]bool)
 		for _, rule := range rules.Prefix {
-			tokenizerRules.PrefixTokens[rule.Text] = PrefixTokenData{rule.Arity}
+			tokenizerRules.PrefixTokens[rule.Text] = true
 		}
 	}
 
@@ -347,14 +346,13 @@ func getDefaultBridgeTokens() map[string]BridgeTokenData {
 	}
 }
 
-func getDefaultPrefixTokens() map[string]PrefixTokenData {
-	return map[string]PrefixTokenData{
-		"return": {One},
-		"yield":  {One},
-		"const":  {One},
-		"var":    {One},
-		"val":    {One},
-		"$$":     {Zero},
+func getDefaultPrefixTokens() map[string]bool {
+	return map[string]bool{
+		"return": true,
+		"yield":  true,
+		"const":  true,
+		"var":    true,
+		"val":    true,
 	}
 }
 
@@ -429,8 +427,8 @@ func (rules *TokenizerRules) BuildTokenLookup() error {
 	}
 
 	// Add prefix tokens
-	for token, data := range rules.PrefixTokens {
-		if err := addToken(token, CustomPrefix, "prefix", data); err != nil {
+	for token := range rules.PrefixTokens {
+		if err := addToken(token, CustomPrefix, "prefix", nil); err != nil {
 			return err
 		}
 	}
