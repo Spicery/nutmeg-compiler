@@ -10,8 +10,6 @@ github.com/onsi/ginkgo/v2 v2.20.2 h1:7NVCeyIWROIAheY21RLS+3j2bb52W0W82tkberYytp4
 github.com/onsi/ginkgo/v2 v2.20.2/go.mod h1:K9gyxPIlb+aIvnZ8bd9Ak+YP18w3APlR+5coaZoE2ag=
 github.com/onsi/gomega v1.34.2 h1:pNCwDkzrsv7MS9kpaQvVb1aVLahQXyJ/Tv5oAZMI3i8=
 github.com/onsi/gomega v1.34.2/go.mod h1:v1xfxRgk0KIsG+QOdm7p8UosrOzPYRo60fd3B/1Dukc=
-github.com/spicery/nutmeg-tokenizer v0.0.0-20250926215339-db5c0ffd2f02 h1:C9OR+Rvk1WhhujbqVpsTU2uy7ifqrczjdTLGPC7+qsE=
-github.com/spicery/nutmeg-tokenizer v0.0.0-20250926215339-db5c0ffd2f02/go.mod h1:ux6KQbFUd9W8R65EbZ4csWgdm739rp8QNtc9A56tosQ=
 github.com/thediveo/go-asciitree v1.0.2 h1:V/w9cd0FdPqDx7f/CJEIoQ8oeXPoPUoBpFsWG4p7Sho=
 github.com/thediveo/go-asciitree v1.0.2/go.mod h1:2OACJb6C/MZf+Jp/TktVMeEZuf+QIO0Kh2Lp9rWHAv4=
 golang.org/x/net v0.28.0 h1:a9JDOJc5GMUJ0+UDqmLT86WiEy7iWyIhz8gz8E4e5hE=

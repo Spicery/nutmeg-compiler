@@ -1,0 +1,18 @@
+# The top-level normalization flag applies to all tests unless overridden.
+normalize: xml
+tests:
+
+  - name: multiline string
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    input: |
+      ```
+      This is a multiline string.
+      And this is the next line.
+      ```
+    expected_output: |
+      <unit>
+        <joinlines quote="backtick">
+          <string value="This is a multiline string."/>
+          <string value="And this is the next line."/>
+        </joinlines>
+      </unit>

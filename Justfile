@@ -1,7 +1,10 @@
 default:
     @just --list
 
-test: unittest lint fmt-check tidy build
+test: functest unittest lint fmt-check tidy build
+
+functest:
+    (cd functests && uv run python3 functest.py --quiet --tests */*.yaml)
 
 unittest:
     go test ./...

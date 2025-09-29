@@ -1,0 +1,185 @@
+# The top-level normalization flag applies to all tests unless overridden.
+normalize: xml
+tests:
+
+  - name: incr
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    input: |
+      def incr(x):
+          x + 1
+      end
+    expected_output: |
+      <unit>
+        <form syntax="surround">
+          <part keyword="def">
+            <apply kind="parentheses">
+              <identifier name="incr"/>
+              <delimited kind="parentheses">
+                <identifier name="x"/>
+              </delimited>
+            </apply>
+          </part>
+          <part keyword="=&gt;&gt;">
+            <operator name="+" syntax="infix">
+              <identifier name="x"/>
+              <number base="10" exponent="0" fraction="" mantissa="1"/>
+            </operator>
+          </part>
+        </form>
+      </unit>
+
+  - name: assignments
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    input: |
+      bar <- copy(bar)
+      bar[0] <-- value
+    expected_output: |
+      <unit>
+        <operator name="&lt;-" syntax="infix">
+          <identifier name="bar"/>
+          <apply kind="parentheses">
+            <identifier name="copy"/>
+            <delimited kind="parentheses">
+              <identifier name="bar"/>
+            </delimited>
+          </apply>
+        </operator>
+        <operator name="&lt;--" syntax="infix">
+          <apply kind="brackets">
+            <identifier name="bar"/>
+            <delimited kind="brackets">
+              <number base="10" exponent="0" fraction="" mantissa="0"/>
+            </delimited>
+          </apply>
+          <identifier name="value"/>
+        </operator>
+      </unit>
+
+  - name: switch
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    input: |
+      switch f( x )  ### selector
+      case 0:
+          total <- total + 1
+      case 1:
+          total <- total * 2 + 1
+      else
+          total <- 0
+      endswitch
+    expected_output: |
+      <unit>
+        <form syntax="surround">
+          <part keyword="switch">
+            <apply kind="parentheses">
+              <identifier name="f"/>
+              <delimited kind="parentheses">
+                <identifier name="x"/>
+              </delimited>
+            </apply>
+          </part>
+          <part keyword="case">
+            <number base="10" exponent="0" fraction="" mantissa="0"/>
+          </part>
+          <part keyword="then">
+            <operator name="&lt;-" syntax="infix">
+              <identifier name="total"/>
+              <operator name="+" syntax="infix">
+                <identifier name="total"/>
+                <number base="10" exponent="0" fraction="" mantissa="1"/>
+              </operator>
+            </operator>
+          </part>
+          <part keyword="case">
+            <number base="10" exponent="0" fraction="" mantissa="1"/>
+          </part>
+          <part keyword="then">
+            <operator name="&lt;-" syntax="infix">
+              <identifier name="total"/>
+              <operator name="+" syntax="infix">
+                <operator name="*" syntax="infix">
+                  <identifier name="total"/>
+                  <number base="10" exponent="0" fraction="" mantissa="2"/>
+                </operator>
+                <number base="10" exponent="0" fraction="" mantissa="1"/>
+              </operator>
+            </operator>
+          </part>
+          <part keyword="else">
+            <operator name="&lt;-" syntax="infix">
+              <identifier name="total"/>
+              <number base="10" exponent="0" fraction="" mantissa="0"/>
+            </operator>
+          </part>
+        </form>
+      </unit>
+
+  - name: conditional as part of quicksort
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    input: |
+      def quicksortInPlace( A, lo, hi ):
+          if lo < hi:
+              p := partition( A, lo, hi )
+              quicksort( A, lo, p - 1 )
+              quicksort( A, p + 1, hi )
+          end
+      end
+    expected_output: |
+      <unit>
+        <form syntax="surround">
+          <part keyword="def">
+            <apply kind="parentheses">
+              <identifier name="quicksortInPlace"/>
+              <delimited kind="parentheses" separator="comma">
+                <identifier name="A"/>
+                <identifier name="lo"/>
+                <identifier name="hi"/>
+              </delimited>
+            </apply>
+          </part>
+          <part keyword="=&gt;&gt;">
+            <form syntax="surround">
+              <part keyword="if">
+                <operator name="&lt;" syntax="infix">
+                  <identifier name="lo"/>
+                  <identifier name="hi"/>
+                </operator>
+              </part>
+              <part keyword="then">
+                <operator name=":=" syntax="infix">
+                  <identifier name="p"/>
+                  <apply kind="parentheses">
+                    <identifier name="partition"/>
+                    <delimited kind="parentheses" separator="comma">
+                      <identifier name="A"/>
+                      <identifier name="lo"/>
+                      <identifier name="hi"/>
+                    </delimited>
+                  </apply>
+                </operator>
+                <apply kind="parentheses">
+                  <identifier name="quicksort"/>
+                  <delimited kind="parentheses" separator="comma">
+                    <identifier name="A"/>
+                    <identifier name="lo"/>
+                    <operator name="-" syntax="infix">
+                      <identifier name="p"/>
+                      <number base="10" exponent="0" fraction="" mantissa="1"/>
+                    </operator>
+                  </delimited>
+                </apply>
+                <apply kind="parentheses">
+                  <identifier name="quicksort"/>
+                  <delimited kind="parentheses" separator="comma">
+                    <identifier name="A"/>
+                    <operator name="+" syntax="infix">
+                      <identifier name="p"/>
+                      <number base="10" exponent="0" fraction="" mantissa="1"/>
+                    </operator>
+                    <identifier name="hi"/>
+                  </delimited>
+                </apply>
+              </part>
+            </form>
+          </part>
+        </form>
+      </unit>
