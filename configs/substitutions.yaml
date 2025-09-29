@@ -1,0 +1,44 @@
+# A simple substitutions file for nutmeg-parser that shows the 
+# format.
+
+substitutions:
+  part:
+    keyword:
+      ifnot: unless
+      else: default
+
+  operator:
+    name:
+      "+": "add"
+
+  identifier:
+    name:
+      old: new
+      new: old
+
+### Standard rewrites.
+
+# rewrite:
+#   - phase:
+#       # Replaces negatively-phrased conditions.
+#       explicit-inversion:
+#         - ifnot: if
+#         - elseifnot: elseif
+
+#       # Rewrites negations of literals into negative literals.
+#       strip-negation:
+#         - outer: "operator/-"
+#           inner: number/sign
+#           key: sign
+#           default: 1
+#           factor: -1
+
+#       # Disguised, rewrites x.f() to f(x) and x.f(y) to f(x,y).
+#       merge:
+#         - outer: apply
+#           inner0: "."
+#           inner1: delimited
+#           move: 0
+
+
+
