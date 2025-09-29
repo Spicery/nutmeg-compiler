@@ -1,4 +1,4 @@
-package parser
+package common
 
 import (
 	"fmt"
@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-func PrintASTXML(root *Node, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func PrintASTXML(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Print the root node (which is the "unit" node)
 	printNodeXML(root, "", indentDelta, output, options)
 }
 
-func printNodeXML(node *Node, currentIndent string, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func printNodeXML(node *Node, currentIndent string, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Open the XML tag
 	fmt.Fprintf(output, "%s<%s", currentIndent, node.Name)
 

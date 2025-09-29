@@ -1,4 +1,4 @@
-package parser
+package common
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ type AsciiNode struct {
 }
 
 // convertToTree converts your Node structure to an asciitree.Tree using the custom label.
-func convertToTree(n *Node, options *ConfigurableOptions) AsciiNode {
+func convertToTree(n *Node, options *PrintOptions) AsciiNode {
 	label := n.Name
 
 	// Extract and sort keys lexically
@@ -48,6 +48,6 @@ func convertToTree(n *Node, options *ConfigurableOptions) AsciiNode {
 	}
 }
 
-func PrintASTAsciiTree(root *Node, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func PrintASTAsciiTree(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	fmt.Fprintln(output, asciitree.RenderFancy(convertToTree(root, options)))
 }

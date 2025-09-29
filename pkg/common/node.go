@@ -72,7 +72,7 @@ func TrimValue(key, value string, trimLength int) string {
 	return value
 }
 
-func pickPrintFunc(format string) func(*Node, string, io.Writer, *ConfigurableOptions) {
+func PickPrintFunc(format string) func(*Node, string, io.Writer, *PrintOptions) {
 	switch strings.ToUpper(format) {
 	case "JSON":
 		return PrintASTJSON

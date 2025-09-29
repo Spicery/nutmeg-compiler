@@ -1,8 +1,9 @@
 package parser
 
 import (
-	"encoding/json"
 	"strings"
+
+	"github.com/spicery/nutmeg-parser/pkg/common"
 )
 
 // TokenType represents the different types of tokens.
@@ -31,25 +32,6 @@ const (
 	MarkTokenType           TokenType = "M" // Mark tokens (commas and semicolons)
 )
 
-// MarshalJSON implements custom JSON marshaling for Span.
-func (s Span) MarshalJSON() ([]byte, error) {
-	arr := [4]int{s.StartLine, s.StartColumn, s.EndLine, s.EndColumn}
-	return json.Marshal(arr)
-}
-
-// UnmarshalJSON implements custom JSON unmarshaling for Span.
-func (s *Span) UnmarshalJSON(data []byte) error {
-	var arr [4]int
-	if err := json.Unmarshal(data, &arr); err != nil {
-		return err
-	}
-	s.StartLine = arr[0]
-	s.StartColumn = arr[1]
-	s.EndLine = arr[2]
-	s.EndColumn = arr[3]
-	return nil
-}
-
 type Arity int
 
 const (
@@ -61,10 +43,10 @@ const (
 // Token represents a single token from the Nutmeg source code.
 type Token struct {
 	// Common fields for all tokens
-	Text  string    `json:"text"`
-	Span  Span      `json:"span"`
-	Type  TokenType `json:"type"`
-	Alias *string   `json:"alias,omitempty"` // The node alias, if any
+	Text  string      `json:"text"`
+	Span  common.Span `json:"span"`
+	Type  TokenType   `json:"type"`
+	Alias *string     `json:"alias,omitempty"` // The node alias, if any
 
 	// String token fields
 	Quote     string   `json:"quote,omitempty"`
@@ -102,7 +84,7 @@ type Token struct {
 }
 
 // NewToken creates a new token with the basic required fields.
-func NewToken(text string, tokenType TokenType, span Span) *Token {
+func NewToken(text string, tokenType TokenType, span common.Span) *Token {
 	return &Token{
 		Text: text,
 		Type: tokenType,

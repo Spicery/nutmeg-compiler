@@ -38,13 +38,13 @@ func escapeJSONString(value string) string {
 	return sb.String()
 }
 
-func PrintASTJSON(root *Node, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func PrintASTJSON(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Print the root node (which is the "unit" node)
 	printNodeJSON(root, "", indentDelta, output, options)
 }
 
 // printNodeJSON recursively prints a single node and its children in JSON format.
-func printNodeJSON(node *Node, currentIndent string, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func printNodeJSON(node *Node, currentIndent string, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Precompute the next level of indentation
 	nextIndent := currentIndent + indentDelta
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func PrintASTYAML(root *Node, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func PrintASTYAML(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Print the root node (which is the "unit" node)
 	printNodeYAML(root, 0, indentDelta, output, options)
 }
@@ -18,7 +18,7 @@ func n1print(indent int, indentDelta string, output io.Writer) {
 	}
 }
 
-func printNodeYAML(node *Node, currentIndent int, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func printNodeYAML(node *Node, currentIndent int, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Print the node name as a key at the current indentation
 	if currentIndent > 0 {
 		n1print(currentIndent-1, indentDelta, output)

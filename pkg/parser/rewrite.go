@@ -2,6 +2,10 @@
 
 package parser
 
+import (
+	. "github.com/spicery/nutmeg-parser/pkg/common"
+)
+
 type Path struct {
 	SiblingPosition int // Position among siblings
 	Parent          *Node

@@ -1,6 +1,9 @@
 package common
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type LineCol struct {
 	LineNo int // The starting line number of the token
@@ -44,4 +47,23 @@ func (x *Span) ToSpan(y *Span) *Span {
 		EndLine:     y.EndLine,
 		EndColumn:   y.EndColumn,
 	}
+}
+
+// MarshalJSON implements custom JSON marshaling for Span.
+func (s Span) MarshalJSON() ([]byte, error) {
+	arr := [4]int{s.StartLine, s.StartColumn, s.EndLine, s.EndColumn}
+	return json.Marshal(arr)
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Span.
+func (s *Span) UnmarshalJSON(data []byte) error {
+	var arr [4]int
+	if err := json.Unmarshal(data, &arr); err != nil {
+		return err
+	}
+	s.StartLine = arr[0]
+	s.StartColumn = arr[1]
+	s.EndLine = arr[2]
+	s.EndColumn = arr[3]
+	return nil
 }

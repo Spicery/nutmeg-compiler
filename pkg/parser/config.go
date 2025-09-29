@@ -6,7 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ConfigurableOptions struct {
+type ExtendedConfigurableOptions struct {
 	Format string `yaml:"option-format,omitempty"`
 	Indent int    `yaml:"option-indent,omitempty"`
 	// DefaultLabel      string `yaml:"option-default-label,omitempty"`

@@ -3,10 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"strings"
 
+	"github.com/spicery/nutmeg-parser/pkg/common"
 	"github.com/spicery/nutmeg-parser/pkg/parser"
 )
 
@@ -38,15 +37,15 @@ func main() {
 	}
 
 	p := parser.NewParser(os.Stdin, false)
-	var node *parser.Node
+	var node *common.Node
 
 	// Select the appropriate print function based on format
-	printFunc := pickPrintFunc(selectedFormat)
+	printFunc := common.PickPrintFunc(selectedFormat)
 
-	tree := &parser.Node{
+	tree := &common.Node{
 		Name:     "unit",
 		Options:  map[string]string{},
-		Children: []*parser.Node{},
+		Children: []*common.Node{},
 	}
 	if srcPath != nil && *srcPath != "" {
 		tree.Options["src"] = *srcPath
@@ -68,7 +67,7 @@ func main() {
 		}
 		tree.Children = append(tree.Children, node)
 	}
-	printFunc(tree, "  ", os.Stdout, &parser.ConfigurableOptions{
+	printFunc(tree, "  ", os.Stdout, &common.PrintOptions{
 		TrimTokenOnOutput: *trim,
 		IncludeSpans:      !*noSpans,
 	})
@@ -85,26 +84,5 @@ func main() {
 	if token != nil {
 		fmt.Fprintf(os.Stderr, "parsing incomplete, next token: '%s' of type %s at line %d, char %d\n", token.Text, token.Type, token.Span.StartLine, token.Span.StartColumn)
 		os.Exit(1)
-	}
-}
-
-func pickPrintFunc(format string) func(*parser.Node, string, io.Writer, *parser.ConfigurableOptions) {
-	switch strings.ToUpper(format) {
-	case "JSON":
-		return parser.PrintASTJSON
-	case "XML":
-		return parser.PrintASTXML
-	case "YAML":
-		return parser.PrintASTYAML
-	case "MERMAID":
-		return parser.PrintASTMermaid
-	case "ASCIITREE":
-		return parser.PrintASTAsciiTree
-	case "DOT":
-		return parser.PrintASTDOT
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown format: %s\n", format)
-		os.Exit(1)
-		return nil
 	}
 }

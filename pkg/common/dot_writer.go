@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func PrintASTDOT(root *Node, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func PrintASTDOT(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Initialize the DOT graph
 	fmt.Fprintln(output, `digraph G {`)
 	fmt.Fprintln(output, `  bgcolor="transparent";`)
@@ -19,7 +19,7 @@ func PrintASTDOT(root *Node, indentDelta string, output io.Writer, options *Conf
 	fmt.Fprintln(output, `}`)
 }
 
-func printNodeDOT(node *Node, parentID string, output io.Writer, options *ConfigurableOptions) {
+func printNodeDOT(node *Node, parentID string, output io.Writer, options *PrintOptions) {
 	// Generate a unique identifier for the current node
 	nodeID := fmt.Sprintf("node_%p", node)
 

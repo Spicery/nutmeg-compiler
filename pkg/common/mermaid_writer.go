@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func PrintASTMermaid(root *Node, indentDelta string, output io.Writer, options *ConfigurableOptions) {
+func PrintASTMermaid(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Initialize the Mermaid graph
 	fmt.Fprintln(output, "graph LR")
 
@@ -15,7 +15,7 @@ func PrintASTMermaid(root *Node, indentDelta string, output io.Writer, options *
 	addStyles(output)
 }
 
-func printNodeMermaid(node *Node, parentID string, output io.Writer, options *ConfigurableOptions) {
+func printNodeMermaid(node *Node, parentID string, output io.Writer, options *PrintOptions) {
 	// Generate a unique ID for the current node
 	nodeID := fmt.Sprintf("node_%p", node)
 
