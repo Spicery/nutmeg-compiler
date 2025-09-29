@@ -17,8 +17,9 @@ const (
 )
 
 func main() {
-	var showHelp, showVersion bool
-	var inputFile, outputFile, configFile string
+	var showHelp, showVersion, noSpans bool
+	var inputFile, outputFile, configFile, format string
+	var trim int
 
 	// Set up custom usage function that includes the description and flags
 	flag.Usage = func() {
@@ -33,6 +34,9 @@ func main() {
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
 	flag.StringVar(&configFile, "rewrite", "", "YAML file containing rewrite rules")
+	flag.StringVar(&format, "f", "XML", "Output format (JSON, XML, etc.)")
+	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
+	flag.BoolVar(&noSpans, "no-spans", false, "Suppress span information in output")
 
 	flag.Parse()
 
@@ -52,6 +56,8 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	printFunc := common.PickPrintFunc(format)
 
 	var rewriteConfig *rewriter.RewriteConfig
 	var err error
@@ -103,10 +109,8 @@ func main() {
 		node = r.Rewrite(node)
 	}
 
-	// For now, just output the node back as JSON (placeholder for rewriting logic)
-	encoder := json.NewEncoder(output)
-	if err := encoder.Encode(&node); err != nil {
-		fmt.Fprintf(os.Stderr, "Error encoding JSON: %v\n", err)
-		os.Exit(1)
-	}
+	printFunc(node, "  ", output, &common.PrintOptions{
+		TrimTokenOnOutput: trim,
+		IncludeSpans:      !noSpans,
+	})
 }
