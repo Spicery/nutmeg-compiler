@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	. "github.com/spicery/nutmeg-parser/pkg/common"
+	. "github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 type TokenQueue struct {

@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/spicery/nutmeg-tokenizer/pkg/tokenizer"
+	"github.com/spicery/nutmeg-compiler/pkg/tokenizer"
 	"gopkg.in/yaml.v3"
 )
 

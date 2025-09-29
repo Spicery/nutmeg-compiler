@@ -3,7 +3,7 @@ package parser
 import (
 	"strings"
 
-	"github.com/spicery/nutmeg-parser/pkg/common"
+	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 // TokenType represents the different types of tokens.

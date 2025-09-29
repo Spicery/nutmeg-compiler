@@ -39,7 +39,9 @@ build:
     mkdir -p bin
     go build -o bin/nutmeg-tokenizer ./cmd/nutmeg-tokenizer
     go build -o bin/nutmeg-parser ./cmd/nutmeg-parser
+    go build -o bin/nutmeg-rewriter ./cmd/nutmeg-rewriter
 
 install:
     go install ./cmd/nutmeg-tokenizer
     go install ./cmd/nutmeg-parser
+    go install ./cmd/nutmeg-rewriter

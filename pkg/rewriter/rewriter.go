@@ -1,9 +1,9 @@
 // This file contains the rewrite rules for the nutmeg-parser.
 
-package parser
+package rewriter
 
 import (
-	. "github.com/spicery/nutmeg-parser/pkg/common"
+	. "github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 type Path struct {

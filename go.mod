@@ -1,4 +1,4 @@
-module github.com/spicery/nutmeg-parser
+module github.com/spicery/nutmeg-compiler
 
 go 1.24.2
 
