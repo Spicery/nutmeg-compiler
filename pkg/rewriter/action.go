@@ -192,3 +192,89 @@ func (a *RemoveOptionAction) Apply(pattern *Pattern, childPosition int, node *co
 	delete(node.Options, a.Key)
 	return node
 }
+
+type SequenceAction struct {
+	Actions []Action
+}
+
+func (a *SequenceAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	if node == nil {
+		return node
+	}
+	for _, action := range a.Actions {
+		node = action.Apply(pattern, childPosition, node, path)
+	}
+	return node
+}
+
+type ChildAction struct {
+	Action Action
+}
+
+func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	if node == nil {
+		return node
+	}
+	if childPosition < 0 || childPosition >= len(node.Children) {
+		return node
+	}
+	child := node.Children[childPosition]
+	new_child := a.Action.Apply(pattern, -1, child, &Path{Parent: node, Others: path})
+	node.Children[childPosition] = new_child
+	return node
+}
+
+type MergeChildWithNextAction struct {
+}
+
+func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	if node == nil {
+		return node
+	}
+	if childPosition < 0 || childPosition >= len(node.Children)-1 {
+		return node
+	}
+	child := node.Children[childPosition]
+	nextChild := node.Children[childPosition+1]
+	child.Children = append(child.Children, nextChild.Children...)
+	child.Options = mergeOptions(child.Options, nextChild.Options)
+	child.Span = *child.Span.ToSpan(&nextChild.Span)
+	// Remove nextChild from node.Children
+	node.Children = append(node.Children[:childPosition+1], node.Children[childPosition+2:]...)
+	return node
+}
+
+func mergeOptions(opt1, opt2 map[string]string) map[string]string {
+	merged := make(map[string]string)
+	for k, v := range opt1 {
+		merged[k] = v
+	}
+	for k, v := range opt2 {
+		merged[k] = v
+	}
+	return merged
+}
+
+type NewNodeChildWithNextAction struct {
+	Name string
+}
+
+func (a *NewNodeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	if node == nil {
+		return node
+	}
+	if childPosition < 0 || childPosition >= len(node.Children)-1 {
+		return node
+	}
+	child := node.Children[childPosition]
+	nextChild := node.Children[childPosition+1]
+	newNode := &common.Node{
+		Name:     a.Name,
+		Options:  make(map[string]string),
+		Children: []*common.Node{child, nextChild},
+		Span:     *child.Span.ToSpan(&nextChild.Span),
+	}
+	// Replace child and nextChild with newNode in node.Children
+	node.Children = append(node.Children[:childPosition], append([]*common.Node{newNode}, node.Children[childPosition+2:]...)...)
+	return node
+}

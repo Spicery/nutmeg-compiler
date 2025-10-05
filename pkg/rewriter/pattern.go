@@ -48,9 +48,11 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 }
 
 type Pattern struct {
-	Parent *NodePattern `yaml:"parent,omitempty"`
-	Self   *NodePattern `yaml:"self,omitempty"`
-	Child  *NodePattern `yaml:"child,omitempty"`
+	Parent        *NodePattern `yaml:"parent,omitempty"`
+	Self          *NodePattern `yaml:"self,omitempty"`
+	Child         *NodePattern `yaml:"child,omitempty"`
+	PreviousChild *NodePattern `yaml:"previousChild,omitempty"`
+	NextChild     *NodePattern `yaml:"nextChild,omitempty"`
 }
 
 func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
@@ -85,16 +87,31 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 			return false, -1
 		}
 	}
+	if p.PreviousChild != nil && childPosition >= 1 {
+		prevChild := node.Children[childPosition-1]
+		if !p.PreviousChild.Matches(prevChild, &Path{SiblingPosition: childPosition - 1, Parent: node, Others: path}) {
+			return false, -1
+		}
+	}
+	fmt.Println("NextChild == nil ", p.NextChild == nil)
+	fmt.Println("childPosition <= len(node.Children)-2", childPosition <= len(node.Children)-2)
+	if p.NextChild != nil && childPosition <= len(node.Children)-2 {
+		nextChild := node.Children[childPosition+1]
+		fmt.Println("NextChild:", nextChild.Name)
+		if !p.NextChild.Matches(nextChild, &Path{SiblingPosition: childPosition + 1, Parent: node, Others: path}) {
+			return false, -1
+		}
+	}
 	return true, childPosition
 }
 
 func (p *Pattern) Validate(name string) error {
-	fmt.Println("Validating pattern for rule:", name)
-	fmt.Println("Pattern details:", p.Self, p.Parent, p.Child)
+	// fmt.Println("Validating pattern for rule:", name)
+	// fmt.Println("Pattern details:", p.Self, p.Parent, p.Child)
 	if p == nil {
 		return fmt.Errorf("pattern is nil")
 	}
-	if p.Self == nil && p.Parent == nil && p.Child == nil {
+	if p.Self == nil && p.Parent == nil && p.Child == nil && p.PreviousChild == nil && p.NextChild == nil {
 		return fmt.Errorf("pattern has no conditions: %s", name)
 	}
 	return nil

@@ -31,13 +31,21 @@ type RewriteRule struct {
 // ActionConfig defines what action to take when a match is found
 // This is used for YAML unmarshaling and then converted to concrete Action implementations
 type ActionConfig struct {
-	ReplaceValue   *ReplaceValueConfig `yaml:"replaceValue,omitempty"`
-	ReplaceName    *ReplaceNameConfig  `yaml:"replaceName,omitempty"`
-	ReplaceByChild *int                `yaml:"replaceByChild,omitempty"`
-	InlineChild    bool                `yaml:"inlineChild,omitempty"`
-	Repeat         *ActionConfig       `yaml:"repeat,omitempty"`
-	RotateOption   *RotateOptionConfig `yaml:"rotateOption,omitempty"`
-	RemoveOption   *RemoveOptionConfig `yaml:"removeOption,omitempty"`
+	ReplaceValue         *ReplaceValueConfig        `yaml:"replaceValue,omitempty"`
+	ReplaceName          *ReplaceNameConfig         `yaml:"replaceName,omitempty"`
+	ReplaceByChild       *int                       `yaml:"replaceByChild,omitempty"`
+	InlineChild          bool                       `yaml:"inlineChild,omitempty"`
+	Repeat               *ActionConfig              `yaml:"repeat,omitempty"`
+	RotateOption         *RotateOptionConfig        `yaml:"rotateOption,omitempty"`
+	RemoveOption         *RemoveOptionConfig        `yaml:"removeOption,omitempty"`
+	Sequence             []ActionConfig             `yaml:"sequence,omitempty"`
+	ChildAction          *ActionConfig              `yaml:"childAction,omitempty"`
+	MergeChildWithNext   bool                       `yaml:"mergeChildWithNext,omitempty"`
+	NewNodeChildWithNext NewNodeChildWithNextConfig `yaml:"newNodeChildWithNext,omitempty"`
+}
+
+type NewNodeChildWithNextConfig struct {
+	Name string `yaml:"name"`
 }
 
 type RemoveOptionConfig struct {
@@ -85,6 +93,18 @@ func (ac ActionConfig) Validate() error {
 	if ac.RemoveOption != nil {
 		count++
 	}
+	if len(ac.Sequence) > 0 {
+		count++
+	}
+	if ac.ChildAction != nil {
+		count++
+	}
+	if ac.MergeChildWithNext {
+		count++
+	}
+	if ac.NewNodeChildWithNext.Name != "" {
+		count++
+	}
 	if count == 0 {
 		return fmt.Errorf("no action specified in ActionConfig: %+v", ac)
 	}
@@ -96,7 +116,7 @@ func (ac ActionConfig) Validate() error {
 
 // ToAction converts an ActionConfig to a concrete Action implementation
 func (ac ActionConfig) ToAction() (Action, error) {
-	fmt.Println("ac:", ac)
+	// fmt.Println("ac:", ac)
 	// Validate the action config first
 	if err := ac.Validate(); err != nil {
 		return nil, err
@@ -148,6 +168,30 @@ func (ac ActionConfig) ToAction() (Action, error) {
 			}, nil
 		}
 		return nil, fmt.Errorf("invalid RemoveOptionConfig: key must be set")
+	}
+	if len(ac.Sequence) > 0 {
+		actions := []Action{}
+		for _, subAc := range ac.Sequence {
+			subAction, err := subAc.ToAction()
+			if err != nil {
+				return nil, fmt.Errorf("error in nested sequence action: %w", err)
+			}
+			actions = append(actions, subAction)
+		}
+		return &SequenceAction{Actions: actions}, nil
+	}
+	if ac.ChildAction != nil {
+		childAction, err := ac.ChildAction.ToAction()
+		if err != nil {
+			return nil, fmt.Errorf("error in nested child action: %w", err)
+		}
+		return &ChildAction{Action: childAction}, nil
+	}
+	if ac.MergeChildWithNext {
+		return &MergeChildWithNextAction{}, nil
+	}
+	if ac.NewNodeChildWithNext.Name != "" {
+		return &NewNodeChildWithNextAction{Name: ac.NewNodeChildWithNext.Name}, nil
 	}
 	// Future actions can be handled here
 	return nil, fmt.Errorf("no valid action found in ActionConfig: %+v", ac)

@@ -41,7 +41,7 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 	for _, passConfig := range rewriteConfig.Passes {
 		var upwards, downwards []*Rule
 		for _, down := range passConfig.Downwards {
-			fmt.Println("Processing downwards rule:", down.Name)
+			// fmt.Println("Processing downwards rule:", down.Name)
 			if e := down.Match.Validate(down.Name); e != nil {
 				return nil, fmt.Errorf("error in downwards rule %s: %w", passConfig.Name, e)
 			}
@@ -56,7 +56,7 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 			})
 		}
 		for _, up := range passConfig.Upwards {
-			fmt.Println("Processing upwards rule:", up.Name)
+			// fmt.Println("Processing upwards rule:", up.Name)
 			if e := up.Match.Validate(up.Name); e != nil {
 				return nil, fmt.Errorf("error in upwards rule %s: %w", passConfig.Name, e)
 			}
@@ -91,8 +91,8 @@ func (r *RewriterPass) doRewrite(node *common.Node, path *Path) *common.Node {
 		return nil
 	}
 	node = r.downwardsRewrites(node, path)
-	for i, child := range node.Children {
-		node.Children[i] = r.doRewrite(child, &Path{SiblingPosition: i, Parent: node, Others: path})
+	for i := 0; i < len(node.Children); i++ {
+		node.Children[i] = r.doRewrite(node.Children[i], &Path{SiblingPosition: i, Parent: node, Others: path})
 	}
 	node = r.upwardsRewrites(node, path)
 	return node
@@ -109,6 +109,7 @@ func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path) *common.No
 func applyRules(node *common.Node, path *Path, rules []*Rule) *common.Node {
 	for _, rule := range rules {
 		if rule != nil && rule.Pattern != nil && rule.Action != nil {
+			fmt.Println("Checking rule:", rule.Name)
 			m, n := rule.Pattern.Matches(node, path)
 			if m {
 				fmt.Printf("Applying rule: '%s' to node: %v\n", rule.Name, node)

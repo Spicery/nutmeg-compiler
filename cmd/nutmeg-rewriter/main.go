@@ -16,6 +16,8 @@ const (
 	usage   = `nutmeg-rewrite - a tree rewriter for the Nutmeg programming language`
 )
 
+const DEFAULT_FORMAT = "JSON"
+
 func main() {
 	var showHelp, showVersion, noSpans bool
 	var inputFile, outputFile, configFile, format string
@@ -34,7 +36,8 @@ func main() {
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
 	flag.StringVar(&configFile, "config", "", "YAML file containing rewrite rules")
-	flag.StringVar(&format, "f", "XML", "Output format (JSON, XML, etc.)")
+	flag.StringVar(&format, "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
+	flag.StringVar(&format, "format", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
 	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
 	flag.BoolVar(&noSpans, "no-spans", false, "Suppress span information in output")
 

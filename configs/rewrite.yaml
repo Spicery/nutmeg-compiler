@@ -6,16 +6,6 @@ passes:
 
   - name: Pass 1
     downwards:
-      - name: Parentheses to seq
-        match:
-          self:
-            name: delimited
-            key: kind
-            value: parentheses
-        action:
-          replaceName:
-            with: seq
-
       - name: Rename form using keyword
         match:
           self:
@@ -29,15 +19,25 @@ passes:
             src: child
             from: value
 
-      - name: Rename part as seq
+      - name: Rename parts to seq
         match:
           self:
-            name: part
+            name: part 
         action:
           replaceName:
             with: seq
 
-      - name: Rename negation as seq (intermediate step)
+      - name: Parentheses to seq
+        match:
+          self:
+            name: delimited
+            key: kind
+            value: parentheses
+        action:
+          replaceName:
+            with: seq
+
+      - name: Rename negation as seq and toggle sign of number
         match:
           self:
             name: operator
@@ -47,25 +47,82 @@ passes:
           child:
             name: number
         action:
-          replaceName:
-            with: seq
+          sequence:
+          - replaceName:
+              with: seq
+          - childAction:
+              rotateOption:
+                key: sign
+                values: ["+", "-"]
 
-      - name: Rotate sign of number, using intermediate seq with "-"
+      - name: Change ':=' to bind (POP)
         match:
-          parent:
-            name: seq
-            key: name
-            value: "-"
-            count: 1
           self:
-            name: number
-            key: sign
+            name: operator
+            key: name
+            value: ":="
+            count: 2
         action:
-          rotateOption:
-            key: sign
-            values: ["+", "-"]
+          replaceName:
+            with: bind
+
+      - name: Change '<-' to assign (POP)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "<-"
+            count: 2
+        action:
+          replaceName:
+            with: assign
+
+      - name: Change '<--' to update (UCALL)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "<--"
+            count: 2
+        action:
+          replaceName:
+            with: update
 
     upwards:
+      - name: Anotation Merge (Step 1)
+        match:
+          self:
+            name: unit
+          child:
+            name: delimited
+            key: kind
+            value: brackets
+          nextChild:
+            name: delimited
+            key: kind
+            value: brackets
+        action:
+          sequence:
+          - repeat:
+              mergeChildWithNext: true
+          - childAction:
+              replaceName:
+                with: seq
+
+      - name: Annotation (Step 2)
+        match:
+          self:
+            name: unit
+          child:
+            name: delimited
+            key: kind
+            value: brackets
+          nextChild:
+            name: def
+        action:
+          newNodeChildWithNext:
+            name: annotation
+
       - name: Remove name option from seq derived from negation.
         match:
           self:

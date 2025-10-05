@@ -9,10 +9,12 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/parser"
 )
 
+const DEFAULT_FORMAT = "JSON"
+
 func main() {
 	// Define command line flags according to CLAUDE.md specifications.
-	var format = flag.String("f", "XML", "Output format (JSON, XML, etc.)")
-	var formatLong = flag.String("format", "XML", "Output format (JSON, XML, etc.)")
+	var format = flag.String("f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
+	var formatLong = flag.String("format", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
 	var srcPath = flag.String("src-path", "", "Source path to annotate the unit with origin")
 	var trim = flag.Int("trim", 0, "Trim names for display purposes")
 	var noSpans = flag.Bool("no-spans", false, "Suppress span information in output")
@@ -21,11 +23,11 @@ func main() {
 
 	// Use the long form if provided, otherwise use the short form.
 	selectedFormat := *format
-	if *formatLong != "XML" {
+	if *formatLong != DEFAULT_FORMAT {
 		selectedFormat = *formatLong
 	}
 
-	p := parser.NewParser(os.Stdin, false)
+	p := parser.NewParser(os.Stdin, true)
 
 	// Select the appropriate print function based on format
 	printFunc := common.PickPrintFunc(selectedFormat)

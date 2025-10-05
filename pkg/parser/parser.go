@@ -700,6 +700,7 @@ func (p *Parser) ReadNumber(token *Token) (*Node, error) {
 			"mantissa": mantissa,
 			"fraction": fraction,
 			"exponent": fmt.Sprintf("%d", exponent),
+			"sign":     "+",
 		},
 		Span:     token.Span,
 		Children: []*Node{},
