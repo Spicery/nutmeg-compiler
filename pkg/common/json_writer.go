@@ -8,7 +8,10 @@ import (
 func PrintASTJSON(root *Node, indentDelta string, output io.Writer, options *PrintOptions) {
 	// Ignore indentDelta and options parameters, just output simple JSON
 	encoder := json.NewEncoder(output)
-	encoder.Encode(root)
+	err := encoder.Encode(root)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func ReadASTJSON(input io.Reader) (*Node, error) {

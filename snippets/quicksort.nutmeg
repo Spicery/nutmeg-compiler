@@ -1,0 +1,27 @@
+[finesse]
+def quicksort( const list ):
+    val A := Mutable( list )
+    quicksortInPlace( A, 0, A.length )
+    return( snapshot( A ) )
+end    
+
+def quicksortInPlace( A, lo, hi ):
+    if lo < hi:
+        p := partition( A, lo, hi )
+        quicksort( A, lo, p - 1 )
+        quicksort( A, p + 1, hi )
+    end
+end
+
+def partition( A, lo, hi ):
+    val pivot := A[hi]
+    var i := lo
+    for j in [lo ..< hi] do
+        if A[j] < pivot:
+            A.swap( i, j )
+            i <- i + 1
+        end
+    end
+    A.swap( i, hi )
+    return( i )
+end

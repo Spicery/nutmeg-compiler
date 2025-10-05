@@ -74,8 +74,8 @@ The `span` field is serialized as a 4-element array `[start_line, start_col, end
   "text": "def",
   "span": [1, 1, 1, 3],
   "type": "S",
-  "expecting": ["identifier"], // Immediate next expected tokens
-  "closed_by": ["end"]         // Tokens that can close this start token
+  "expecting": ["id"],      // Immediate next expected tokens
+  "closed_by": ["end"]      // Tokens that can close this start token
 }
 ```
 

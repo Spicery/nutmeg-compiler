@@ -13,15 +13,15 @@ tests:
         <form syntax="surround">
           <part keyword="def">
             <apply kind="parentheses">
-              <identifier name="incr"/>
+              <id name="incr"/>
               <delimited kind="parentheses">
-                <identifier name="x"/>
+                <id name="x"/>
               </delimited>
             </apply>
           </part>
           <part keyword="=&gt;&gt;">
             <operator name="+" syntax="infix">
-              <identifier name="x"/>
+              <id name="x"/>
               <number base="10" exponent="0" fraction="" mantissa="1"/>
             </operator>
           </part>
@@ -36,22 +36,22 @@ tests:
     expected_output: |
       <unit>
         <operator name="&lt;-" syntax="infix">
-          <identifier name="bar"/>
+          <id name="bar"/>
           <apply kind="parentheses">
-            <identifier name="copy"/>
+            <id name="copy"/>
             <delimited kind="parentheses">
-              <identifier name="bar"/>
+              <id name="bar"/>
             </delimited>
           </apply>
         </operator>
         <operator name="&lt;--" syntax="infix">
           <apply kind="brackets">
-            <identifier name="bar"/>
+            <id name="bar"/>
             <delimited kind="brackets">
               <number base="10" exponent="0" fraction="" mantissa="0"/>
             </delimited>
           </apply>
-          <identifier name="value"/>
+          <id name="value"/>
         </operator>
       </unit>
 
@@ -71,9 +71,9 @@ tests:
         <form syntax="surround">
           <part keyword="switch">
             <apply kind="parentheses">
-              <identifier name="f"/>
+              <id name="f"/>
               <delimited kind="parentheses">
-                <identifier name="x"/>
+                <id name="x"/>
               </delimited>
             </apply>
           </part>
@@ -82,9 +82,9 @@ tests:
           </part>
           <part keyword="then">
             <operator name="&lt;-" syntax="infix">
-              <identifier name="total"/>
+              <id name="total"/>
               <operator name="+" syntax="infix">
-                <identifier name="total"/>
+                <id name="total"/>
                 <number base="10" exponent="0" fraction="" mantissa="1"/>
               </operator>
             </operator>
@@ -94,10 +94,10 @@ tests:
           </part>
           <part keyword="then">
             <operator name="&lt;-" syntax="infix">
-              <identifier name="total"/>
+              <id name="total"/>
               <operator name="+" syntax="infix">
                 <operator name="*" syntax="infix">
-                  <identifier name="total"/>
+                  <id name="total"/>
                   <number base="10" exponent="0" fraction="" mantissa="2"/>
                 </operator>
                 <number base="10" exponent="0" fraction="" mantissa="1"/>
@@ -106,7 +106,7 @@ tests:
           </part>
           <part keyword="else">
             <operator name="&lt;-" syntax="infix">
-              <identifier name="total"/>
+              <id name="total"/>
               <number base="10" exponent="0" fraction="" mantissa="0"/>
             </operator>
           </part>
@@ -128,11 +128,11 @@ tests:
         <form syntax="surround">
           <part keyword="def">
             <apply kind="parentheses">
-              <identifier name="quicksortInPlace"/>
+              <id name="quicksortInPlace"/>
               <delimited kind="parentheses" separator="comma">
-                <identifier name="A"/>
-                <identifier name="lo"/>
-                <identifier name="hi"/>
+                <id name="A"/>
+                <id name="lo"/>
+                <id name="hi"/>
               </delimited>
             </apply>
           </part>
@@ -140,42 +140,42 @@ tests:
             <form syntax="surround">
               <part keyword="if">
                 <operator name="&lt;" syntax="infix">
-                  <identifier name="lo"/>
-                  <identifier name="hi"/>
+                  <id name="lo"/>
+                  <id name="hi"/>
                 </operator>
               </part>
               <part keyword="then">
                 <operator name=":=" syntax="infix">
-                  <identifier name="p"/>
+                  <id name="p"/>
                   <apply kind="parentheses">
-                    <identifier name="partition"/>
+                    <id name="partition"/>
                     <delimited kind="parentheses" separator="comma">
-                      <identifier name="A"/>
-                      <identifier name="lo"/>
-                      <identifier name="hi"/>
+                      <id name="A"/>
+                      <id name="lo"/>
+                      <id name="hi"/>
                     </delimited>
                   </apply>
                 </operator>
                 <apply kind="parentheses">
-                  <identifier name="quicksort"/>
+                  <id name="quicksort"/>
                   <delimited kind="parentheses" separator="comma">
-                    <identifier name="A"/>
-                    <identifier name="lo"/>
+                    <id name="A"/>
+                    <id name="lo"/>
                     <operator name="-" syntax="infix">
-                      <identifier name="p"/>
+                      <id name="p"/>
                       <number base="10" exponent="0" fraction="" mantissa="1"/>
                     </operator>
                   </delimited>
                 </apply>
                 <apply kind="parentheses">
-                  <identifier name="quicksort"/>
+                  <id name="quicksort"/>
                   <delimited kind="parentheses" separator="comma">
-                    <identifier name="A"/>
+                    <id name="A"/>
                     <operator name="+" syntax="infix">
-                      <identifier name="p"/>
+                      <id name="p"/>
                       <number base="10" exponent="0" fraction="" mantissa="1"/>
                     </operator>
-                    <identifier name="hi"/>
+                    <id name="hi"/>
                   </delimited>
                 </apply>
               </part>

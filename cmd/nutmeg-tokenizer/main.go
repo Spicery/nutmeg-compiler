@@ -23,8 +23,8 @@ Options:
   -v, --version         Show version information
   --input <file>        Input file (defaults to stdin)
   --output <file>       Output file (defaults to stdout)
-  --rules <file>        YAML rules file for custom tokenisation rules (optional)
-  --make-rules          Generate default rules YAML to stdout
+  --config <file>       YAML rules file for custom tokenisation rules (optional)
+  --make-config         Generate default rules YAML to stdout
   --exit0               Exit with code 0 even on tokenisation errors (suppress stderr)
 
 Examples:
@@ -53,7 +53,7 @@ func main() {
 	flag.BoolVar(&makeRules, "make-rules", false, "Generate default rules YAML")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
-	flag.StringVar(&rulesFile, "rules", "", "YAML rules file (optional)")
+	flag.StringVar(&rulesFile, "config", "", "YAML rules file (optional)")
 
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr, usage)

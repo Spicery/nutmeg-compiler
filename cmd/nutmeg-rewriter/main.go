@@ -33,7 +33,7 @@ func main() {
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
-	flag.StringVar(&configFile, "rewrite", "", "YAML file containing rewrite rules")
+	flag.StringVar(&configFile, "config", "", "YAML file containing rewrite rules")
 	flag.StringVar(&format, "f", "XML", "Output format (JSON, XML, etc.)")
 	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
 	flag.BoolVar(&noSpans, "no-spans", false, "Suppress span information in output")
@@ -70,7 +70,11 @@ func main() {
 	}
 	var r *rewriter.Rewriter
 	if rewriteConfig != nil {
-		r = rewriter.NewRewriter(rewriteConfig)
+		r, err = rewriter.NewRewriter(rewriteConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating rewriter: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Determine input source

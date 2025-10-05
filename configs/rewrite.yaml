@@ -1,0 +1,98 @@
+# A simple substitutions file for nutmeg-parser that shows the 
+# format.
+name: Simple Rewrite Example
+description: A simple example of rewriting a parse tree
+passes:
+
+  - name: Pass 1
+    downwards:
+      - name: Parentheses to seq
+        match:
+          self:
+            name: delimited
+            key: kind
+            value: parentheses
+        action:
+          replaceName:
+            with: seq
+
+      - name: Rename form using keyword
+        match:
+          self:
+            name: form
+          child:
+            name: part
+            key: keyword
+            siblingPosition: 0
+        action:
+          replaceName:
+            src: child
+            from: value
+
+      - name: Rename part as seq
+        match:
+          self:
+            name: part
+        action:
+          replaceName:
+            with: seq
+
+      - name: Rename negation as seq (intermediate step)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "-"
+            count: 1
+          child:
+            name: number
+        action:
+          replaceName:
+            with: seq
+
+      - name: Rotate sign of number, using intermediate seq with "-"
+        match:
+          parent:
+            name: seq
+            key: name
+            value: "-"
+            count: 1
+          self:
+            name: number
+            key: sign
+        action:
+          rotateOption:
+            key: sign
+            values: ["+", "-"]
+
+    upwards:
+      - name: Remove name option from seq derived from negation.
+        match:
+          self:
+            name: seq
+            key: name
+            value: "-"
+            count: 1
+        action:
+          removeOption:
+            key: name
+
+      - name: Elide sequence of length 1
+        match:
+          self:
+            name: seq
+            count: 1
+        action:
+          repeat:
+            replaceByChild: 0
+
+      - name: Inline nested sequences
+        match:
+          self:
+            name: seq
+          child:
+            name: seq
+        action:
+          repeat:
+            inlineChild: true
+

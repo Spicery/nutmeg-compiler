@@ -64,11 +64,11 @@ func escapeDOTValue(value string) string {
 }
 
 var tagColors = map[string]string{
-	"form":       "lightpink",
-	"part":       "#FFD8E1",
-	"apply":      "lightgreen",
-	"identifier": "Honeydew",
-	"arguments":  "PaleTurquoise",
-	"operator":   "#C0FFC0",
-	"number":     "lightgoldenrodyellow",
+	"form":      "lightpink",
+	"part":      "#FFD8E1",
+	"apply":     "lightgreen",
+	"id":        "Honeydew",
+	"arguments": "PaleTurquoise",
+	"operator":  "#C0FFC0",
+	"number":    "lightgoldenrodyellow",
 }

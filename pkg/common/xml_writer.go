@@ -13,6 +13,9 @@ func PrintASTXML(root *Node, indentDelta string, output io.Writer, options *Prin
 }
 
 func printNodeXML(node *Node, currentIndent string, indentDelta string, output io.Writer, options *PrintOptions) {
+	if node == nil {
+		panic("printNodeXML: node is nil")
+	}
 	// Open the XML tag
 	fmt.Fprintf(output, "%s<%s", currentIndent, node.Name)
 

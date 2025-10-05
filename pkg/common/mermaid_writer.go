@@ -59,13 +59,13 @@ func printNodeMermaid(node *Node, parentID string, output io.Writer, options *Pr
 func addStyles(output io.Writer) {
 	// Define styles for specific tags (similar to your Python tag_colors dictionary)
 	tagColors := map[string]string{
-		"form":       "lightpink",
-		"part":       "#FFD8E1",
-		"apply":      "lightgreen",
-		"identifier": "Honeydew",
-		"arguments":  "PaleTurquoise",
-		"operator":   "#C0FFC0",
-		"number":     "lightgoldenrodyellow",
+		"form":      "lightpink",
+		"part":      "#FFD8E1",
+		"apply":     "lightgreen",
+		"id":        "Honeydew",
+		"arguments": "PaleTurquoise",
+		"operator":  "#C0FFC0",
+		"number":    "lightgoldenrodyellow",
 	}
 
 	// Write the style definitions for each tag
