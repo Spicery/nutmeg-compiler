@@ -6,6 +6,44 @@ passes:
 
   - name: Pass 1
     downwards:
+      - name: IFNOT
+        match:
+          self:
+            name: part
+            key: keyword
+            value: ifnot
+            count: 1
+          child:
+            siblingPosition: 0
+        action:
+          sequence:
+          - replaceValue:
+              with: if
+          - newNodeChild:
+              name: syscall
+              key: name
+              value: not
+              children: 1
+
+      - name: ELSEIFNOT
+        match:
+          self:
+            name: part
+            key: keyword
+            value: elseifnot
+            count: 1
+        action:
+          sequence:
+          - replaceValue:
+              with: elseif
+          - newNodeChild:
+              name: syscall
+              key: name
+              value: not
+
+  - name: Pass 2
+    downwards:
+
       - name: Rename form using keyword
         match:
           self:
@@ -120,8 +158,9 @@ passes:
           nextChild:
             name: def
         action:
-          newNodeChildWithNext:
+          newNodeChild:
             name: annotation
+            children: 2
 
       - name: Remove name option from seq derived from negation.
         match:
@@ -134,15 +173,6 @@ passes:
           removeOption:
             key: name
 
-      - name: Elide sequence of length 1
-        match:
-          self:
-            name: seq
-            count: 1
-        action:
-          repeat:
-            replaceByChild: 0
-
       - name: Inline nested sequences
         match:
           self:
@@ -152,4 +182,14 @@ passes:
         action:
           repeat:
             inlineChild: true
+
+      - name: Elide sequence of length 1
+        match:
+          self:
+            name: seq
+            count: 1
+        action:
+          repeat:
+            replaceByChild: 0
+
 

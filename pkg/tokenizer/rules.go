@@ -314,7 +314,7 @@ func getDefaultBridgeTokens() map[string]BridgeTokenData {
 			Arity:     Many,
 		},
 		"then": {
-			Expecting: []string{"case", "elseif", "else", "end", "endif", "endifnot", "endswitch", "endcase"},
+			Expecting: []string{"case", "elseif", "elseifnot", "else", "end", "endif", "endifnot", "endswitch", "endcase"},
 			In:        []string{"if", "ifnot", "switch"},
 			Arity:     Many,
 		},

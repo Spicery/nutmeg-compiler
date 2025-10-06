@@ -43,11 +43,11 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 		for _, down := range passConfig.Downwards {
 			// fmt.Println("Processing downwards rule:", down.Name)
 			if e := down.Match.Validate(down.Name); e != nil {
-				return nil, fmt.Errorf("error in downwards rule %s: %w", passConfig.Name, e)
+				return nil, fmt.Errorf("error in downwards rule \"%s/%s\": %w", passConfig.Name, down.Name, e)
 			}
 			downAction, err := down.Action.ToAction()
 			if err != nil {
-				return nil, fmt.Errorf("error in downwards rule %s: %w", passConfig.Name, err)
+				return nil, fmt.Errorf("error in downwards rule \"%s/%s\": %w", passConfig.Name, down.Name, err)
 			}
 			downwards = append(downwards, &Rule{
 				Name:    down.Name,
@@ -81,6 +81,7 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 
 func (r *Rewriter) Rewrite(node *common.Node) *common.Node {
 	for _, pass := range r.Passes {
+		fmt.Println("Starting pass:", pass.Name)
 		node = pass.doRewrite(node, nil)
 	}
 	return node

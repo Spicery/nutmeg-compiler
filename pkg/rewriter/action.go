@@ -101,12 +101,15 @@ type ReplaceByChildAction struct {
 }
 
 func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	fmt.Println("ReplaceByChild: repeating action")
 	if node == nil {
 		return node
 	}
 	if a.ChildIndex < 0 || a.ChildIndex >= len(node.Children) {
+		fmt.Println("ReplaceByChild: failed, invalid child index", a.ChildIndex)
 		return node
 	}
+	fmt.Println("ReplaceByChild: OK!, replaced by child index", a.ChildIndex)
 	return node.Children[a.ChildIndex]
 }
 
@@ -119,11 +122,10 @@ func (a *RepeatAction) Apply(pattern *Pattern, childPosition int, node *common.N
 	if node == nil {
 		return node
 	}
-
 	for {
-		fmt.Println("RepeatAction: applying action, inner loop")
-		fmt.Println("Children = ", len(node.Children), ", position = ", childPosition)
-		node := a.Action.Apply(pattern, childPosition, node, path)
+		fmt.Println("> RepeatAction: applying action, inner loop")
+		fmt.Println("> Children = ", len(node.Children), ", position = ", childPosition)
+		node = a.Action.Apply(pattern, childPosition, node, path)
 		var m bool
 		m, childPosition = pattern.Matches(node, path)
 		if !m {
@@ -255,26 +257,37 @@ func mergeOptions(opt1, opt2 map[string]string) map[string]string {
 	return merged
 }
 
-type NewNodeChildWithNextAction struct {
-	Name string
+type NewNodeChildAction struct {
+	Name     string
+	Key      *string
+	Value    *string
+	Children *int
 }
 
-func (a *NewNodeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
 	if node == nil {
 		return node
 	}
-	if childPosition < 0 || childPosition >= len(node.Children)-1 {
-		return node
-	}
-	child := node.Children[childPosition]
-	nextChild := node.Children[childPosition+1]
+
 	newNode := &common.Node{
 		Name:     a.Name,
 		Options:  make(map[string]string),
-		Children: []*common.Node{child, nextChild},
-		Span:     *child.Span.ToSpan(&nextChild.Span),
+		Children: []*common.Node{},
 	}
-	// Replace child and nextChild with newNode in node.Children
-	node.Children = append(node.Children[:childPosition], append([]*common.Node{newNode}, node.Children[childPosition+2:]...)...)
+	if a.Key != nil && a.Value != nil {
+		newNode.Options[*a.Key] = *a.Value
+	}
+	if a.Children == nil {
+		newNode.Children = append(newNode.Children, node.Children...)
+		node.Children = []*common.Node{newNode}
+	} else {
+		L := max(0, *a.Children)
+		N := min(childPosition+L, len(node.Children))
+		for i := childPosition; i < N; i++ {
+			newNode.Children = append(newNode.Children, node.Children[i])
+		}
+		node.Children = append(node.Children[:childPosition], append([]*common.Node{newNode}, node.Children[childPosition+L:]...)...)
+	}
+	newNode.UpdateSpan()
 	return node
 }

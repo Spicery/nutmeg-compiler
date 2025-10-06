@@ -31,21 +31,24 @@ type RewriteRule struct {
 // ActionConfig defines what action to take when a match is found
 // This is used for YAML unmarshaling and then converted to concrete Action implementations
 type ActionConfig struct {
-	ReplaceValue         *ReplaceValueConfig        `yaml:"replaceValue,omitempty"`
-	ReplaceName          *ReplaceNameConfig         `yaml:"replaceName,omitempty"`
-	ReplaceByChild       *int                       `yaml:"replaceByChild,omitempty"`
-	InlineChild          bool                       `yaml:"inlineChild,omitempty"`
-	Repeat               *ActionConfig              `yaml:"repeat,omitempty"`
-	RotateOption         *RotateOptionConfig        `yaml:"rotateOption,omitempty"`
-	RemoveOption         *RemoveOptionConfig        `yaml:"removeOption,omitempty"`
-	Sequence             []ActionConfig             `yaml:"sequence,omitempty"`
-	ChildAction          *ActionConfig              `yaml:"childAction,omitempty"`
-	MergeChildWithNext   bool                       `yaml:"mergeChildWithNext,omitempty"`
-	NewNodeChildWithNext NewNodeChildWithNextConfig `yaml:"newNodeChildWithNext,omitempty"`
+	ReplaceValue       *ReplaceValueConfig `yaml:"replaceValue,omitempty"`
+	ReplaceName        *ReplaceNameConfig  `yaml:"replaceName,omitempty"`
+	ReplaceByChild     *int                `yaml:"replaceByChild,omitempty"`
+	InlineChild        bool                `yaml:"inlineChild,omitempty"`
+	Repeat             *ActionConfig       `yaml:"repeat,omitempty"`
+	RotateOption       *RotateOptionConfig `yaml:"rotateOption,omitempty"`
+	RemoveOption       *RemoveOptionConfig `yaml:"removeOption,omitempty"`
+	Sequence           []ActionConfig      `yaml:"sequence,omitempty"`
+	ChildAction        *ActionConfig       `yaml:"childAction,omitempty"`
+	MergeChildWithNext bool                `yaml:"mergeChildWithNext,omitempty"`
+	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
 }
 
-type NewNodeChildWithNextConfig struct {
-	Name string `yaml:"name"`
+type NewNodeChildConfig struct {
+	Name     string  `yaml:"name"`
+	Key      *string `yaml:"key,omitempty"`
+	Value    *string `yaml:"value,omitempty"`
+	Children *int    `yaml:"children,omitempty"`
 }
 
 type RemoveOptionConfig struct {
@@ -102,7 +105,7 @@ func (ac ActionConfig) Validate() error {
 	if ac.MergeChildWithNext {
 		count++
 	}
-	if ac.NewNodeChildWithNext.Name != "" {
+	if ac.NewNodeChild != nil {
 		count++
 	}
 	if count == 0 {
@@ -171,10 +174,10 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	}
 	if len(ac.Sequence) > 0 {
 		actions := []Action{}
-		for _, subAc := range ac.Sequence {
+		for i, subAc := range ac.Sequence {
 			subAction, err := subAc.ToAction()
 			if err != nil {
-				return nil, fmt.Errorf("error in nested sequence action: %w", err)
+				return nil, fmt.Errorf("error in nested sequence action, position %d: %w", i, err)
 			}
 			actions = append(actions, subAction)
 		}
@@ -190,8 +193,8 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	if ac.MergeChildWithNext {
 		return &MergeChildWithNextAction{}, nil
 	}
-	if ac.NewNodeChildWithNext.Name != "" {
-		return &NewNodeChildWithNextAction{Name: ac.NewNodeChildWithNext.Name}, nil
+	if ac.NewNodeChild != nil {
+		return &NewNodeChildAction{Name: ac.NewNodeChild.Name, Key: ac.NewNodeChild.Key, Value: ac.NewNodeChild.Value, Children: ac.NewNodeChild.Children}, nil
 	}
 	// Future actions can be handled here
 	return nil, fmt.Errorf("no valid action found in ActionConfig: %+v", ac)

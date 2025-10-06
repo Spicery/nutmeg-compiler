@@ -92,3 +92,13 @@ func PickPrintFunc(format string) func(*Node, string, io.Writer, *PrintOptions) 
 		return nil
 	}
 }
+
+func (n *Node) UpdateSpan() {
+	if len(n.Children) > 0 {
+		span := n.Children[0].Span
+		for _, child := range n.Children[1:] {
+			span = span.MergeSpan(&child.Span)
+		}
+		n.Span = span
+	}
+}

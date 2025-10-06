@@ -49,6 +49,22 @@ func (x *Span) ToSpan(y *Span) *Span {
 	}
 }
 
+func (x *Span) MergeSpan(y *Span) Span {
+	if y == nil {
+		return Span{}
+	}
+	sofar := *x
+	if sofar.StartLine > y.StartLine || (sofar.StartLine == y.StartLine && sofar.StartColumn > y.StartColumn) {
+		sofar.StartLine = y.StartLine
+		sofar.StartColumn = y.StartColumn
+	}
+	if sofar.EndLine < y.EndLine || (sofar.EndLine == y.EndLine && sofar.EndColumn < y.EndColumn) {
+		sofar.EndLine = y.EndLine
+		sofar.EndColumn = y.EndColumn
+	}
+	return sofar
+}
+
 // MarshalJSON implements custom JSON marshaling for Span.
 func (s Span) MarshalJSON() ([]byte, error) {
 	arr := [4]int{s.StartLine, s.StartColumn, s.EndLine, s.EndColumn}
