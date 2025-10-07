@@ -42,13 +42,15 @@ type ActionConfig struct {
 	ChildAction        *ActionConfig       `yaml:"childAction,omitempty"`
 	MergeChildWithNext bool                `yaml:"mergeChildWithNext,omitempty"`
 	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
+	PermuteChildren    []int               `yaml:"permuteChildren,omitempty"`
 }
 
 type NewNodeChildConfig struct {
-	Name     string  `yaml:"name"`
-	Key      *string `yaml:"key,omitempty"`
-	Value    *string `yaml:"value,omitempty"`
-	Children *int    `yaml:"children,omitempty"`
+	Name   string  `yaml:"name"`
+	Key    *string `yaml:"key,omitempty"`
+	Value  *string `yaml:"value,omitempty"`
+	Offset int     `yaml:"offset,omitempty"`
+	Length *int    `yaml:"length,omitempty"`
 }
 
 type RemoveOptionConfig struct {
@@ -69,14 +71,19 @@ type ReplaceNameConfig struct {
 
 // ReplaceValueConfig is the YAML configuration for replace value actions
 type ReplaceValueConfig struct {
-	With string `yaml:"with"`
+	Key  *string `yaml:"key,omitempty"`
+	With *string `yaml:"with,omitempty"`
 }
 
 func (ac ActionConfig) Validate() error {
 	// Options are mutually exclusive; only one should be set.
 	count := 0
 	if ac.ReplaceValue != nil {
-		count++
+		if ac.ReplaceValue.With != nil && ac.ReplaceValue.Key != nil {
+			count++
+		} else {
+			return fmt.Errorf("invalid ReplaceValueConfig: both 'key' and 'with' must be set")
+		}
 	}
 	if ac.ReplaceName != nil {
 		count++
@@ -108,6 +115,10 @@ func (ac ActionConfig) Validate() error {
 	if ac.NewNodeChild != nil {
 		count++
 	}
+	if len(ac.PermuteChildren) > 0 {
+		// fmt.Println("PermuteChildren count:", len(ac.PermuteChildren))
+		count++
+	}
 	if count == 0 {
 		return fmt.Errorf("no action specified in ActionConfig: %+v", ac)
 	}
@@ -126,8 +137,12 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	}
 	// Determine which action is specified and create the corresponding Action
 	if ac.ReplaceValue != nil {
+		if ac.ReplaceValue.With == nil || ac.ReplaceValue.Key == nil {
+			return nil, fmt.Errorf("invalid ReplaceValueConfig: both 'key' and 'with' must be set")
+		}
 		return &ReplaceValueAction{
-			With: ac.ReplaceValue.With,
+			With: *ac.ReplaceValue.With,
+			Key:  *ac.ReplaceValue.Key,
 		}, nil
 	}
 	if ac.ReplaceName != nil {
@@ -194,7 +209,10 @@ func (ac ActionConfig) ToAction() (Action, error) {
 		return &MergeChildWithNextAction{}, nil
 	}
 	if ac.NewNodeChild != nil {
-		return &NewNodeChildAction{Name: ac.NewNodeChild.Name, Key: ac.NewNodeChild.Key, Value: ac.NewNodeChild.Value, Children: ac.NewNodeChild.Children}, nil
+		return &NewNodeChildAction{Name: ac.NewNodeChild.Name, Key: ac.NewNodeChild.Key, Value: ac.NewNodeChild.Value, Offset: ac.NewNodeChild.Offset, Length: ac.NewNodeChild.Length}, nil
+	}
+	if len(ac.PermuteChildren) > 0 {
+		return &PermuteChildrenAction{NewOrder: ac.PermuteChildren}, nil
 	}
 	// Future actions can be handled here
 	return nil, fmt.Errorf("no valid action found in ActionConfig: %+v", ac)

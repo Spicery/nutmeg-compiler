@@ -4,9 +4,6 @@ name: Simple Rewrite Example
 description: A simple example of rewriting a parse tree
 passes:
 
-# <form>...<part keyword!=else/></form>
-# <form>...<part keyword!=else/><part keyword="else"><seq/></part></form>
-
   - name: Pass 1
     downwards:
       - name: Insert else
@@ -24,7 +21,42 @@ passes:
             name: part
             key: keyword
             value: else
-            children: 0
+            offset: 1
+            length: 0
 
+      - name: Undo cascade
+        match:
+          self:
+            name: form
+          child:
+            name: part
+            key: keyword
+            value: elseif
+            siblingPosition: -3
+        action:
+          sequence:
+          - childAction:
+              replaceValue:
+                key: keyword
+                with: if
+          - newNodeChild:
+              name: form
+              length: 3
 
-
+      - name: Flip ifnot
+        match:
+          self:
+            name: form
+            count: 3
+          child:
+            name: part
+            key: keyword
+            value: ifnot
+            siblingPosition: 0
+        action:
+          sequence:
+            - childAction:
+                replaceValue:
+                  key: keyword
+                  with: if
+            - permuteChildren: [1,2]

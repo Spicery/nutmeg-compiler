@@ -28,7 +28,7 @@ func (np *NodePattern) IsEmpty() bool {
 }
 
 func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
-	fmt.Println("Matching NodePattern:", np, "against node:", node)
+	// fmt.Println("Matching NodePattern:", np, "against node:", node)
 	if node == nil {
 		return false
 	}
@@ -50,13 +50,13 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 	if np.Count != nil && len(node.Children) != *np.Count {
 		return false
 	}
-	if np.SiblingPosition != nil {
-		k := *np.SiblingPosition % len(node.Children)
-		if path == nil || path.SiblingPosition != k {
-			fmt.Println("Sibling position failed:", path.SiblingPosition, "expected", k)
+	if np.SiblingPosition != nil || path == nil {
+		k := mod(*np.SiblingPosition, len(path.Parent.Children))
+		if path.SiblingPosition != k {
+			// fmt.Println("Sibling position failed:", path.SiblingPosition, *np.SiblingPosition, k)
 			return false
 		}
-		fmt.Println("Sibling position matched:", path.SiblingPosition, "expected", k)
+		// fmt.Println("Sibling position matched:", path.SiblingPosition, *np.SiblingPosition, k)
 	}
 	return true
 }
@@ -91,6 +91,7 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 	if p.Child != nil {
 		matched := false
 		for n, child := range node.Children {
+			// fmt.Println("Checking child:", n, child.Name)
 			if p.Child.Matches(child, &Path{SiblingPosition: n, Parent: node, Others: path}) {
 				matched = true
 				childPosition = n

@@ -18,6 +18,7 @@ passes:
         action:
           sequence:
           - replaceValue:
+              key: keyword
               with: if
           - newNodeChild:
               name: syscall
@@ -35,6 +36,7 @@ passes:
         action:
           sequence:
           - replaceValue:
+              key: keyword
               with: elseif
           - newNodeChild:
               name: syscall

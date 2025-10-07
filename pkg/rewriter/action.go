@@ -15,18 +15,17 @@ type Action interface {
 ////////////////////////////////////////////////////////////////////////////////
 
 type ReplaceValueAction struct {
-	With string `yaml:"new_value,omitempty"`
+	Key  string
+	With string
 }
 
 func (a *ReplaceValueAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	// fmt.Println("ReplaceValueAction: replacing value with", a.With, "for key", a.Key, "pattern.Self.Key =", pattern.Self.Key)
 	if node == nil {
 		return node
 	}
-	k := pattern.Self.Key
-	if k == nil {
-		return node
-	}
-	node.Options[*k] = a.With
+	k := a.Key
+	node.Options[k] = a.With
 	return node
 }
 
@@ -262,10 +261,12 @@ type NewNodeChildAction struct {
 	Key      *string
 	Value    *string
 	Children *int
+	Offset   int
+	Length   *int
 }
 
 func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
-	fmt.Println("NewNodeChildAction: inserting new node", a.Name, "at position", childPosition)
+	// fmt.Println("NewNodeChildAction: inserting new node", a.Name, "at position", childPosition)
 	if node == nil {
 		return node
 	}
@@ -277,17 +278,54 @@ func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *co
 	if a.Key != nil && a.Value != nil {
 		newNode.Options[*a.Key] = *a.Value
 	}
-	if a.Children == nil {
+	if a.Length == nil {
 		newNode.Children = append(newNode.Children, node.Children...)
 		node.Children = []*common.Node{newNode}
 	} else {
-		L := max(0, *a.Children)
-		N := min(childPosition+L, len(node.Children))
-		for i := childPosition; i < N; i++ {
+		// fmt.Println("NewNodeChildAction: inserting with offset", a.Offset, "and length", *a.Length)
+		offset := childPosition + a.Offset
+		// fmt.Println("NewNodeChildAction: calculated offset is", offset)
+		length := max(0, *a.Length)
+		N := min(offset+length, len(node.Children))
+		for i := offset; i < N; i++ {
 			newNode.Children = append(newNode.Children, node.Children[i])
 		}
-		node.Children = append(node.Children[:childPosition], append([]*common.Node{newNode}, node.Children[childPosition+L:]...)...)
+		// before := append(make([]*common.Node, 0), node.Children[:offset]...)
+		// after := append(make([]*common.Node, 0), node.Children[offset+length:]...)
+		// node.Children = append(before, newNode)
+		// node.Children = append(node.Children, after...)
+		// fmt.Println("Length of before:", len(before), "after:", len(after), "children now:", len(node.Children))
+		node.Children = append(node.Children[:offset], append([]*common.Node{newNode}, node.Children[offset+length:]...)...)
 	}
 	newNode.UpdateSpan()
+	return node
+}
+
+type PermuteChildrenAction struct {
+	NewOrder []int
+}
+
+func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	// fmt.Println("PermuteChildrenAction: permuting children to new order", a.NewOrder)
+	if node == nil || len(a.NewOrder) < 2 {
+		return node
+	}
+	for _, idx := range a.NewOrder {
+		if idx < 0 || idx >= len(node.Children) {
+			fmt.Println("PermuteChildrenAction: invalid index in new order:", idx)
+			return node
+		}
+	}
+	// a.NewOrder is a permutation "cycle".
+	tmp := node.Children[a.NewOrder[0]]
+	for i, newIndex := range a.NewOrder {
+		if i == 0 {
+			continue
+		}
+		prevIndex := a.NewOrder[i-1]
+		node.Children[prevIndex] = node.Children[newIndex]
+	}
+	// Place the first element in the position of the last element
+	node.Children[a.NewOrder[len(a.NewOrder)-1]] = tmp
 	return node
 }
