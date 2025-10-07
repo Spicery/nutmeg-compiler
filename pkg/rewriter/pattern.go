@@ -7,11 +7,20 @@ import (
 )
 
 type NodePattern struct {
-	Name            *string
-	Key             *string
-	Value           *string
-	Count           *int
-	SiblingPosition *int
+	Name            *string `yaml:"name,omitempty"`
+	Key             *string `yaml:"key,omitempty"`
+	Value           *string `yaml:"value,omitempty"`
+	Cmp             *bool   `yaml:"cmp,omitempty"`
+	Count           *int    `yaml:"count,omitempty"`
+	SiblingPosition *int    `yaml:"siblingPosition,omitempty"`
+}
+
+// GetCmp returns the comparison value, defaulting to true if not set
+func (np *NodePattern) GetCmp() bool {
+	if np.Cmp == nil {
+		return true // Default to true
+	}
+	return *np.Cmp
 }
 
 func (np *NodePattern) IsEmpty() bool {
@@ -19,6 +28,7 @@ func (np *NodePattern) IsEmpty() bool {
 }
 
 func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
+	fmt.Println("Matching NodePattern:", np, "against node:", node)
 	if node == nil {
 		return false
 	}
@@ -33,16 +43,20 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 		if !exists {
 			return false
 		}
-		if np.Value != nil && val != *np.Value {
+		if np.Value != nil && (val == *np.Value) != np.GetCmp() {
 			return false
 		}
 	}
 	if np.Count != nil && len(node.Children) != *np.Count {
 		return false
 	}
-	if np.SiblingPosition != nil && (path == nil || path.SiblingPosition != *np.SiblingPosition) {
-		// fmt.Println("Sibling position failed:", path.SiblingPosition, "expected", np.SiblingPosition)
-		return false
+	if np.SiblingPosition != nil {
+		k := *np.SiblingPosition % len(node.Children)
+		if path == nil || path.SiblingPosition != k {
+			fmt.Println("Sibling position failed:", path.SiblingPosition, "expected", k)
+			return false
+		}
+		fmt.Println("Sibling position matched:", path.SiblingPosition, "expected", k)
 	}
 	return true
 }
@@ -93,8 +107,6 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 			return false, -1
 		}
 	}
-	fmt.Println("NextChild == nil ", p.NextChild == nil)
-	fmt.Println("childPosition <= len(node.Children)-2", childPosition <= len(node.Children)-2)
 	if p.NextChild != nil && childPosition <= len(node.Children)-2 {
 		nextChild := node.Children[childPosition+1]
 		fmt.Println("NextChild:", nextChild.Name)

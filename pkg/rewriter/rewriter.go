@@ -112,6 +112,8 @@ func applyRules(node *common.Node, path *Path, rules []*Rule) *common.Node {
 		if rule != nil && rule.Pattern != nil && rule.Action != nil {
 			fmt.Println("Checking rule:", rule.Name)
 			m, n := rule.Pattern.Matches(node, path)
+			fmt.Println("Result:", m, n)
+
 			if m {
 				fmt.Printf("Applying rule: '%s' to node: %v\n", rule.Name, node)
 				node = (*rule.Action).Apply(rule.Pattern, n, node, path)

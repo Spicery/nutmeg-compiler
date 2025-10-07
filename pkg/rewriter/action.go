@@ -265,10 +265,10 @@ type NewNodeChildAction struct {
 }
 
 func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	fmt.Println("NewNodeChildAction: inserting new node", a.Name, "at position", childPosition)
 	if node == nil {
 		return node
 	}
-
 	newNode := &common.Node{
 		Name:     a.Name,
 		Options:  make(map[string]string),

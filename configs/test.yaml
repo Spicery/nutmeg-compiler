@@ -1,0 +1,30 @@
+# A simple substitutions file for nutmeg-parser that shows the 
+# format.
+name: Simple Rewrite Example
+description: A simple example of rewriting a parse tree
+passes:
+
+# <form>...<part keyword!=else/></form>
+# <form>...<part keyword!=else/><part keyword="else"><seq/></part></form>
+
+  - name: Pass 1
+    downwards:
+      - name: Insert else
+        match:
+          self:
+            name: form
+          child:
+            name: part
+            key: keyword
+            value: else
+            cmp: false
+            siblingPosition: -1
+        action:
+          newNodeChild:
+            name: part
+            key: keyword
+            value: else
+            children: 0
+
+
+
