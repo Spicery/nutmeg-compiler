@@ -14,6 +14,20 @@ type Action interface {
 /// Actions
 ////////////////////////////////////////////////////////////////////////////////
 
+type ReplaceValueFromAction struct {
+	Key    string
+	Source string
+	From   string
+}
+
+func (a *ReplaceValueFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+	if node == nil {
+		return node
+	}
+	node.Options[a.Key] = fetchFromSource(a.From, a.Source, pattern, childPosition, node, path)
+	return node
+}
+
 type ReplaceValueAction struct {
 	Key  string
 	With string
@@ -74,23 +88,23 @@ func fetchFromSource(from string, source string, pattern *Pattern, childPosition
 		}
 		return fetchFrom(from, pattern.Parent.Key, path.Parent)
 	case "child":
-		fmt.Println("fetchFromSource: fetching from child", pattern.Child)
+		// fmt.Println("fetchFromSource: fetching from child", pattern.Child)
 		if pattern.Child == nil || pattern.Child.Key == nil || childPosition < 0 || childPosition >= len(node.Children) {
 			return ""
 		}
-		fmt.Println("fetchFromSource: fetching from child key", *pattern.Child.Key)
+		// fmt.Println("fetchFromSource: fetching from child key", *pattern.Child.Key)
 		return fetchFrom(from, pattern.Child.Key, node.Children[childPosition])
 	}
 	return ""
 }
 
 func (a *ReplaceNameFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
-	fmt.Println("ReplaceNameFromAction: replacing name from", a.From, "of", a.Source)
+	// fmt.Println("ReplaceNameFromAction: replacing name from", a.From, "of", a.Source)
 	if node == nil {
 		return node
 	}
 	new_name := fetchFromSource(a.From, a.Source, pattern, childPosition, node, path)
-	fmt.Println("ReplaceNameFromAction: new name is", new_name)
+	// fmt.Println("ReplaceNameFromAction: new name is", new_name)
 	node.Name = new_name
 	return node
 }
@@ -100,39 +114,39 @@ type ReplaceByChildAction struct {
 }
 
 func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
-	fmt.Println("ReplaceByChild: repeating action")
+	// fmt.Println("ReplaceByChild: repeating action")
 	if node == nil {
 		return node
 	}
 	if a.ChildIndex < 0 || a.ChildIndex >= len(node.Children) {
-		fmt.Println("ReplaceByChild: failed, invalid child index", a.ChildIndex)
+		// fmt.Println("ReplaceByChild: failed, invalid child index", a.ChildIndex)
 		return node
 	}
-	fmt.Println("ReplaceByChild: OK!, replaced by child index", a.ChildIndex)
+	// fmt.Println("ReplaceByChild: OK!, replaced by child index", a.ChildIndex)
 	return node.Children[a.ChildIndex]
 }
 
-type RepeatAction struct {
-	Action Action
-}
+// type RepeatAction struct {
+// 	Action Action
+// }
 
-func (a *RepeatAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
-	fmt.Println("RepeatAction: repeating action")
-	if node == nil {
-		return node
-	}
-	for {
-		fmt.Println("> RepeatAction: applying action, inner loop")
-		fmt.Println("> Children = ", len(node.Children), ", position = ", childPosition)
-		node = a.Action.Apply(pattern, childPosition, node, path)
-		var m bool
-		m, childPosition = pattern.Matches(node, path)
-		if !m {
-			break
-		}
-	}
-	return node
-}
+// func (a *RepeatAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+// 	fmt.Println("RepeatAction: repeating action")
+// 	if node == nil {
+// 		return node
+// 	}
+// 	for {
+// 		fmt.Println("> RepeatAction: applying action, inner loop")
+// 		fmt.Println("> Children = ", len(node.Children), ", position = ", childPosition)
+// 		node = a.Action.Apply(pattern, childPosition, node, path)
+// 		var m bool
+// 		m, childPosition = pattern.Matches(node, path)
+// 		if !m {
+// 			break
+// 		}
+// 	}
+// 	return node
+// }
 
 type InlineChildAction struct {
 }
@@ -276,6 +290,7 @@ func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *co
 		Children: []*common.Node{},
 	}
 	if a.Key != nil && a.Value != nil {
+		fmt.Println("NewNodeChildAction: setting option", *a.Key, "to", *a.Value)
 		newNode.Options[*a.Key] = *a.Value
 	}
 	if a.Length == nil {

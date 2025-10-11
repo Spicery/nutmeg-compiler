@@ -50,7 +50,8 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 	if np.Count != nil && len(node.Children) != *np.Count {
 		return false
 	}
-	if np.SiblingPosition != nil || path == nil {
+	if np.SiblingPosition != nil && path != nil {
+		// fmt.Println("DEBUG:", np, path)
 		k := mod(*np.SiblingPosition, len(path.Parent.Children))
 		if path.SiblingPosition != k {
 			// fmt.Println("Sibling position failed:", path.SiblingPosition, *np.SiblingPosition, k)
