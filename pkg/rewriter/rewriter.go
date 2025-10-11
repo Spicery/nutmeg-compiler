@@ -174,7 +174,10 @@ func applyRules(node *common.Node, path *Path, rules []*Rule) *common.Node {
 
 			if m {
 				// fmt.Printf("Applying rule: '%s' to node: %v\n", rule.Name, node)
-				node = (*rule.Action).Apply(rule.Pattern, n, node, path)
+				replacement_node, changed := (*rule.Action).Apply(rule.Pattern, n, node, path)
+				if changed {
+					node = replacement_node
+				}
 				currentRule = rule.OnSuccess
 				fmt.Println("Success with rule", rule.Name, ", moving to rule #", currentRule)
 			} else {

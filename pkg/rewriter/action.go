@@ -7,7 +7,10 @@ import (
 )
 
 type Action interface {
-	Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node
+	// Returns the node (possibly modified or replaced) and a boolean indicating
+	// whether any modification occurred. If modified is false, the returned node
+	// should be ignored and the original used.
+	Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,12 +23,12 @@ type ReplaceValueFromAction struct {
 	From   string
 }
 
-func (a *ReplaceValueFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *ReplaceValueFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	node.Options[a.Key] = fetchFromSource(a.From, a.Source, pattern, childPosition, node, path)
-	return node
+	return node, true
 }
 
 type ReplaceValueAction struct {
@@ -33,26 +36,26 @@ type ReplaceValueAction struct {
 	With string
 }
 
-func (a *ReplaceValueAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *ReplaceValueAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	// fmt.Println("ReplaceValueAction: replacing value with", a.With, "for key", a.Key, "pattern.Self.Key =", pattern.Self.Key)
 	if node == nil {
-		return node
+		return node, false
 	}
 	k := a.Key
 	node.Options[k] = a.With
-	return node
+	return node, true
 }
 
 type ReplaceNameWithAction struct {
 	With string
 }
 
-func (a *ReplaceNameWithAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *ReplaceNameWithAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	node.Name = a.With
-	return node
+	return node, true
 }
 
 type ReplaceNameFromAction struct {
@@ -98,65 +101,44 @@ func fetchFromSource(from string, source string, pattern *Pattern, childPosition
 	return ""
 }
 
-func (a *ReplaceNameFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *ReplaceNameFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	// fmt.Println("ReplaceNameFromAction: replacing name from", a.From, "of", a.Source)
 	if node == nil {
-		return node
+		return node, false
 	}
 	new_name := fetchFromSource(a.From, a.Source, pattern, childPosition, node, path)
 	// fmt.Println("ReplaceNameFromAction: new name is", new_name)
 	node.Name = new_name
-	return node
+	return node, true
 }
 
 type ReplaceByChildAction struct {
 	ChildIndex int
 }
 
-func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	// fmt.Println("ReplaceByChild: repeating action")
 	if node == nil {
-		return node
+		return node, false
 	}
 	if a.ChildIndex < 0 || a.ChildIndex >= len(node.Children) {
-		// fmt.Println("ReplaceByChild: failed, invalid child index", a.ChildIndex)
-		return node
+		fmt.Println("ReplaceByChild: failed, invalid child index", a.ChildIndex)
+		return node, false
 	}
 	// fmt.Println("ReplaceByChild: OK!, replaced by child index", a.ChildIndex)
-	return node.Children[a.ChildIndex]
+	return node.Children[a.ChildIndex], true
 }
-
-// type RepeatAction struct {
-// 	Action Action
-// }
-
-// func (a *RepeatAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
-// 	fmt.Println("RepeatAction: repeating action")
-// 	if node == nil {
-// 		return node
-// 	}
-// 	for {
-// 		fmt.Println("> RepeatAction: applying action, inner loop")
-// 		fmt.Println("> Children = ", len(node.Children), ", position = ", childPosition)
-// 		node = a.Action.Apply(pattern, childPosition, node, path)
-// 		var m bool
-// 		m, childPosition = pattern.Matches(node, path)
-// 		if !m {
-// 			break
-// 		}
-// 	}
-// 	return node
-// }
 
 type InlineChildAction struct {
 }
 
-func (a *InlineChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *InlineChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	if childPosition < 0 || childPosition >= len(node.Children) {
-		panic("InlineChildAction: invalid child position")
+		fmt.Println("InlineChildAction: invalid child position")
+		return node, false
 	}
 
 	matched_child := node.Children[childPosition]
@@ -167,7 +149,7 @@ func (a *InlineChildAction) Apply(pattern *Pattern, childPosition int, node *com
 	new_children = append(new_children, old_children[childPosition+1:]...)
 	node.Children = new_children
 
-	return node
+	return node, true
 }
 
 type RotateOptionAction struct {
@@ -176,9 +158,9 @@ type RotateOptionAction struct {
 	Initial string
 }
 
-func (a *RotateOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *RotateOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	fmt.Println("Pattern:", *pattern)
 	k := a.Key
@@ -190,64 +172,72 @@ func (a *RotateOptionAction) Apply(pattern *Pattern, childPosition int, node *co
 		if v == value {
 			nextIndex := (i + 1) % len(a.Values)
 			node.Options[k] = a.Values[nextIndex]
-			return node
+			return node, true
 		}
 	}
-	return node
+	return node, false
 }
 
 type RemoveOptionAction struct {
 	Key string
 }
 
-func (a *RemoveOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *RemoveOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	delete(node.Options, a.Key)
-	return node
+	return node, true
 }
 
 type SequenceAction struct {
 	Actions []Action
 }
 
-func (a *SequenceAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *SequenceAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
+	anyModified := false
 	for _, action := range a.Actions {
-		node = action.Apply(pattern, childPosition, node, path)
+		replacement_node, modified := action.Apply(pattern, childPosition, node, path)
+		if modified {
+			anyModified = true
+			node = replacement_node
+		}
 	}
-	return node
+	return node, anyModified
 }
 
 type ChildAction struct {
 	Action Action
 }
 
-func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	if childPosition < 0 || childPosition >= len(node.Children) {
-		return node
+		return node, false
 	}
 	child := node.Children[childPosition]
-	new_child := a.Action.Apply(pattern, -1, child, &Path{Parent: node, Others: path})
-	node.Children[childPosition] = new_child
-	return node
+	new_child, modified := a.Action.Apply(pattern, -1, child, &Path{Parent: node, Others: path})
+	if modified {
+		node.Children[childPosition] = new_child
+		return node, true
+	}
+	return node, false
 }
 
 type MergeChildWithNextAction struct {
 }
 
-func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return node
+		return node, false
 	}
 	if childPosition < 0 || childPosition >= len(node.Children)-1 {
-		return node
+		return node, false
 	}
 	child := node.Children[childPosition]
 	nextChild := node.Children[childPosition+1]
@@ -256,7 +246,7 @@ func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, no
 	child.Span = *child.Span.ToSpan(&nextChild.Span)
 	// Remove nextChild from node.Children
 	node.Children = append(node.Children[:childPosition+1], node.Children[childPosition+2:]...)
-	return node
+	return node, true
 }
 
 func mergeOptions(opt1, opt2 map[string]string) map[string]string {
@@ -279,10 +269,10 @@ type NewNodeChildAction struct {
 	Length   *int
 }
 
-func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	// fmt.Println("NewNodeChildAction: inserting new node", a.Name, "at position", childPosition)
 	if node == nil {
-		return node
+		return node, false
 	}
 	newNode := &common.Node{
 		Name:     a.Name,
@@ -313,22 +303,22 @@ func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *co
 		node.Children = append(node.Children[:offset], append([]*common.Node{newNode}, node.Children[offset+length:]...)...)
 	}
 	newNode.UpdateSpan()
-	return node
+	return node, true
 }
 
 type PermuteChildrenAction struct {
 	NewOrder []int
 }
 
-func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) *common.Node {
+func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
 	// fmt.Println("PermuteChildrenAction: permuting children to new order", a.NewOrder)
 	if node == nil || len(a.NewOrder) < 2 {
-		return node
+		return node, false
 	}
 	for _, idx := range a.NewOrder {
 		if idx < 0 || idx >= len(node.Children) {
 			fmt.Println("PermuteChildrenAction: invalid index in new order:", idx)
-			return node
+			return node, false
 		}
 	}
 	// a.NewOrder is a permutation "cycle".
@@ -342,5 +332,5 @@ func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node 
 	}
 	// Place the first element in the position of the last element
 	node.Children[a.NewOrder[len(a.NewOrder)-1]] = tmp
-	return node
+	return node, true
 }
