@@ -3,7 +3,7 @@ normalize: xml
 tests:
 
   - name: incr
-    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
     input: |
       def incr(x):
           x + 1
@@ -22,14 +22,14 @@ tests:
           <part keyword="=&gt;&gt;">
             <operator name="+" syntax="infix">
               <id name="x"/>
-              <number base="10" exponent="0" fraction="" mantissa="1"/>
+              <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
             </operator>
           </part>
         </form>
       </unit>
 
   - name: assignments
-    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
     input: |
       bar <- copy(bar)
       bar[0] <-- value
@@ -48,7 +48,7 @@ tests:
           <apply kind="brackets">
             <id name="bar"/>
             <delimited kind="brackets">
-              <number base="10" exponent="0" fraction="" mantissa="0"/>
+              <number base="10" exponent="0" fraction="" mantissa="0" sign="+"/>
             </delimited>
           </apply>
           <id name="value"/>
@@ -56,7 +56,7 @@ tests:
       </unit>
 
   - name: switch
-    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
     input: |
       switch f( x )  ### selector
       case 0:
@@ -78,19 +78,19 @@ tests:
             </apply>
           </part>
           <part keyword="case">
-            <number base="10" exponent="0" fraction="" mantissa="0"/>
+            <number base="10" exponent="0" fraction="" mantissa="0" sign="+"/>
           </part>
           <part keyword="then">
             <operator name="&lt;-" syntax="infix">
               <id name="total"/>
               <operator name="+" syntax="infix">
                 <id name="total"/>
-                <number base="10" exponent="0" fraction="" mantissa="1"/>
+                <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
               </operator>
             </operator>
           </part>
           <part keyword="case">
-            <number base="10" exponent="0" fraction="" mantissa="1"/>
+            <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
           </part>
           <part keyword="then">
             <operator name="&lt;-" syntax="infix">
@@ -98,23 +98,23 @@ tests:
               <operator name="+" syntax="infix">
                 <operator name="*" syntax="infix">
                   <id name="total"/>
-                  <number base="10" exponent="0" fraction="" mantissa="2"/>
+                  <number base="10" exponent="0" fraction="" mantissa="2" sign="+"/>
                 </operator>
-                <number base="10" exponent="0" fraction="" mantissa="1"/>
+                <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
               </operator>
             </operator>
           </part>
           <part keyword="else">
             <operator name="&lt;-" syntax="infix">
               <id name="total"/>
-              <number base="10" exponent="0" fraction="" mantissa="0"/>
+              <number base="10" exponent="0" fraction="" mantissa="0" sign="+"/>
             </operator>
           </part>
         </form>
       </unit>
 
   - name: conditional as part of quicksort
-    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
     input: |
       def quicksortInPlace( A, lo, hi ):
           if lo < hi:
@@ -163,7 +163,7 @@ tests:
                     <id name="lo"/>
                     <operator name="-" syntax="infix">
                       <id name="p"/>
-                      <number base="10" exponent="0" fraction="" mantissa="1"/>
+                      <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
                     </operator>
                   </delimited>
                 </apply>
@@ -173,7 +173,7 @@ tests:
                     <id name="A"/>
                     <operator name="+" syntax="infix">
                       <id name="p"/>
-                      <number base="10" exponent="0" fraction="" mantissa="1"/>
+                      <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
                     </operator>
                     <id name="hi"/>
                   </delimited>

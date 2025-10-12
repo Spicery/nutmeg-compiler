@@ -3,7 +3,7 @@ normalize: xml
 tests:
 
   - name: multiline string
-    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser --no-spans"
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
     input: |
       ```
       This is a multiline string.
