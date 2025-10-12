@@ -41,81 +41,9 @@ passes:
                 name: not
                 count: 1
 
-        
-
-      # - name: Mark forms
-      #   match:
-      #     self:
-      #       name: form
-      #     child:
-      #       name: part
-      #       key: keyword
-      #       siblingPosition: 0
-      #   action:
-      #     replaceValue:
-      #       key: keyword
-      #       src: child
-      #       from: value
-
-      # - name: Insert else
-      #   match:
-      #     self:
-      #       name: form
-      #       key: keyword
-      #       value: if
-      #     child:
-      #       name: part
-      #       key: keyword
-      #       value: else
-      #       cmp: false
-      #       siblingPosition: -1
-      #   action:
-      #     newNodeChild:
-      #       name: part
-      #       key: keyword
-      #       value: else
-      #       offset: 1
-      #       length: 0
-
-      # - name: Undo elseif
-      #   match:
-      #     self:
-      #       name: form
-      #       key: keyword
-      #       value: if
-      #     child:
-      #       name: part
-      #       key: keyword
-      #       value: elseif
-      #       siblingPosition: -3
-      #   action:
-      #     newNodeChild:
-      #       name: form
-      #       key: keyword
-      #       value: quack
-      #       length: 3
-      #   # repeatOnSuccess: true
-
-      # # - name: Flip ifnot
-      # #   match:
-      # #     self:
-      # #       name: form
-      # #       count: 3
-      # #     child:
-      # #       name: part
-      # #       key: not
-      # #       value: true
-      # #       siblingPosition: 0
-      # #   action:
-      # #     sequence:
-      # #       - childAction:
-      # #           replaceValue:
-      # #             key: not
-      # #             with: false
-      # #       - permuteChildren: [1,2]
-
+   
     upwards:
-      - name: form->quack
+      - name: form->if
         match:
           self:
             name: form
@@ -127,12 +55,12 @@ passes:
         action:
           replaceName:
             key: keyword
-            with: quack
+            with: if
 
       - name: add-else
         match:
           self:
-            name: quack
+            name: if
           child:
             name: part
             key: keyword
@@ -150,7 +78,7 @@ passes:
       - name: Undo elseif
         match:
           self:
-            name: quack
+            name: if
           child:
             name: part
             key: keyword
@@ -158,6 +86,55 @@ passes:
             siblingPosition: -3
         action:
           newNodeChild:
-            name: quack
+            name: if
             length: 3
         repeatOnSuccess: true
+
+
+
+  - name: Pass 1, remove <if><not>...</not>...</if>
+    upwards:
+      - name: part-not
+        match:
+          self:
+            name: part
+            count: 1
+          child:
+            name: not
+        action:
+          replaceByChild: 0
+
+      - name: if-not
+        match:
+          self:
+            name: if
+            value: true
+            count: 3
+          child:
+            name: not
+            count: 1
+            siblingPosition: 0
+        action:
+          sequence:
+            - childAction:
+                replaceName: 
+                  with: seq
+            - permuteChildren: [1,2]
+
+  - name: Pass 2, flatten seq
+    downwards:
+      - name: part -> seq
+        match:
+          self:
+            name: part
+        action:
+          replaceName:
+            with: seq
+
+      - name: seq-1
+        match:
+          self:
+            name: seq
+            count: 1
+        action:
+          replaceByChild: 0
