@@ -1,0 +1,33 @@
+name: Rewrite function applications
+description: Canonicalize function application syntax
+passes:
+
+  - name: Pass 1
+    downwards:
+      - name: (x.f)(y) -> f(x,y)
+        match:
+          self:
+            name: apply
+            count: 2
+          child:
+            name: operator
+            key: name
+            value: "."
+            count: 2
+            siblingPosition: 0
+          nextChild:
+            name: delimited
+            key: kind
+            value: parentheses
+        action:
+          sequence:
+            - replaceName: 
+                with: dotapply
+            - inlineChild: true
+            - permuteChildren: [0, 1]
+            - newNodeChild:
+                name: delimited
+                key: kind
+                value: parentheses
+                offset: 1
+                length: 2

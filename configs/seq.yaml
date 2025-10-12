@@ -1,0 +1,56 @@
+
+name: seq
+description: Add sequences and canonize
+passes:
+  - name: Pass 1, convert forms to seq
+    downwards:
+      - name: Rename form using keyword
+        match:
+          self:
+            name: form
+          child:
+            name: part
+            key: keyword
+            siblingPosition: 0
+        action:
+          replaceName:
+            src: child
+            from: value
+
+      - name: Rename parts to seq
+        match:
+          self:
+            name: part 
+        action:
+          replaceName:
+            with: seq
+
+      - name: Parentheses to seq
+        match:
+          self:
+            name: delimited
+            key: kind
+            value: parentheses
+        action:
+          replaceName:
+            with: seq
+
+    upwards:
+    - name: Inline nested sequences
+      match:
+        self:
+          name: seq
+        child:
+          name: seq
+      action:
+        inlineChild: true
+      repeatOnSuccess: true
+
+    - name: seq-1
+      match:
+        self:
+          name: seq
+          count: 1
+      action:
+        replaceByChild: 0
+      onSuccess: Inline nested sequences
