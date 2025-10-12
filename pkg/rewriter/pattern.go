@@ -2,6 +2,7 @@ package rewriter
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
@@ -28,7 +29,6 @@ func (np *NodePattern) IsEmpty() bool {
 }
 
 func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
-	// fmt.Println("Matching NodePattern:", np, "against node:", node)
 	if node == nil {
 		return false
 	}
@@ -51,13 +51,10 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 		return false
 	}
 	if np.SiblingPosition != nil && path != nil {
-		// fmt.Println("DEBUG:", np, path)
 		k := mod(*np.SiblingPosition, len(path.Parent.Children))
 		if path.SiblingPosition != k {
-			// fmt.Println("Sibling position failed:", path.SiblingPosition, *np.SiblingPosition, k)
 			return false
 		}
-		// fmt.Println("Sibling position matched:", path.SiblingPosition, *np.SiblingPosition, k)
 	}
 	return true
 }
@@ -92,7 +89,6 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 	if p.Child != nil {
 		matched := false
 		for n, child := range node.Children {
-			// fmt.Println("Checking child:", n, child.Name)
 			if p.Child.Matches(child, &Path{SiblingPosition: n, Parent: node, Others: path}) {
 				matched = true
 				childPosition = n
@@ -111,7 +107,7 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 	}
 	if p.NextChild != nil && childPosition <= len(node.Children)-2 {
 		nextChild := node.Children[childPosition+1]
-		fmt.Println("NextChild:", nextChild.Name)
+		fmt.Fprintln(os.Stderr, "NextChild:", nextChild.Name)
 		if !p.NextChild.Matches(nextChild, &Path{SiblingPosition: childPosition + 1, Parent: node, Others: path}) {
 			return false, -1
 		}
@@ -120,8 +116,6 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 }
 
 func (p *Pattern) Validate(name string) error {
-	// fmt.Println("Validating pattern for rule:", name)
-	// fmt.Println("Pattern details:", p.Self, p.Parent, p.Child)
 	if p == nil {
 		return fmt.Errorf("pattern is nil")
 	}

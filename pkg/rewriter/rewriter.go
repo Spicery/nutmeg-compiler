@@ -4,6 +4,7 @@ package rewriter
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
@@ -51,7 +52,6 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 		}
 		var upwards, downwards []*Rule
 		for d, down := range passConfig.Downwards {
-			// fmt.Println("Processing downwards rule:", down.Name)
 			if e := down.Match.Validate(down.Name); e != nil {
 				return nil, fmt.Errorf("error in downwards rule \"%s/%s\": %w", passConfig.Name, down.Name, e)
 			}
@@ -88,7 +88,6 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 			})
 		}
 		for u, up := range passConfig.Upwards {
-			// fmt.Println("Processing upwards rule:", up.Name)
 			if e := up.Match.Validate(up.Name); e != nil {
 				return nil, fmt.Errorf("error in upwards rule %s: %w", passConfig.Name, e)
 			}
@@ -98,8 +97,8 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 			}
 			onSuccess := u + 1
 			onFailure := u + 1
-			fmt.Println("Upwards rule", up.Name)
-			fmt.Println("            ", up.RepeatOnSuccess)
+			fmt.Fprintln(os.Stderr, "Upwards rule", up.Name)
+			fmt.Fprintln(os.Stderr, "            ", up.RepeatOnSuccess)
 			if up.RepeatOnSuccess {
 				onSuccess = u
 			} else if up.OnSuccess != nil {
@@ -137,7 +136,6 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 
 func (r *Rewriter) Rewrite(node *common.Node) *common.Node {
 	for _, pass := range r.Passes {
-		// fmt.Println("Starting pass:", pass.Name)
 		node = pass.doRewrite(node, nil)
 	}
 	return node
@@ -168,21 +166,18 @@ func applyRules(node *common.Node, path *Path, rules []*Rule) *common.Node {
 	for currentRule < len(rules) {
 		rule := rules[currentRule]
 		if rule != nil && rule.Pattern != nil && rule.Action != nil {
-			// fmt.Println("Checking rule:", rule.Name)
 			m, n := rule.Pattern.Matches(node, path)
-			// fmt.Println("Result:", m, n)
 
 			if m {
-				// fmt.Printf("Applying rule: '%s' to node: %v\n", rule.Name, node)
 				replacement_node, changed := (*rule.Action).Apply(rule.Pattern, n, node, path)
 				if changed {
 					node = replacement_node
 				}
 				currentRule = rule.OnSuccess
-				fmt.Println("Success with rule", rule.Name, ", moving to rule #", currentRule)
+				fmt.Fprintln(os.Stderr, "Success with rule", rule.Name, ", moving to rule #", currentRule)
 			} else {
 				currentRule = rule.OnFailure
-				fmt.Println("Failure, moving to rule #", currentRule)
+				fmt.Fprintln(os.Stderr, "Failure, moving to rule #", currentRule)
 			}
 		}
 	}

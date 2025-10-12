@@ -2,6 +2,7 @@ package rewriter
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
@@ -37,7 +38,6 @@ type ReplaceValueAction struct {
 }
 
 func (a *ReplaceValueAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
-	// fmt.Println("ReplaceValueAction: replacing value with", a.With, "for key", a.Key, "pattern.Self.Key =", pattern.Self.Key)
 	if node == nil {
 		return node, false
 	}
@@ -91,23 +91,19 @@ func fetchFromSource(from string, source string, pattern *Pattern, childPosition
 		}
 		return fetchFrom(from, pattern.Parent.Key, path.Parent)
 	case "child":
-		// fmt.Println("fetchFromSource: fetching from child", pattern.Child)
 		if pattern.Child == nil || pattern.Child.Key == nil || childPosition < 0 || childPosition >= len(node.Children) {
 			return ""
 		}
-		// fmt.Println("fetchFromSource: fetching from child key", *pattern.Child.Key)
 		return fetchFrom(from, pattern.Child.Key, node.Children[childPosition])
 	}
 	return ""
 }
 
 func (a *ReplaceNameFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
-	// fmt.Println("ReplaceNameFromAction: replacing name from", a.From, "of", a.Source)
 	if node == nil {
 		return node, false
 	}
 	new_name := fetchFromSource(a.From, a.Source, pattern, childPosition, node, path)
-	// fmt.Println("ReplaceNameFromAction: new name is", new_name)
 	node.Name = new_name
 	return node, true
 }
@@ -117,15 +113,13 @@ type ReplaceByChildAction struct {
 }
 
 func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
-	// fmt.Println("ReplaceByChild: repeating action")
 	if node == nil {
 		return node, false
 	}
 	if a.ChildIndex < 0 || a.ChildIndex >= len(node.Children) {
-		fmt.Println("ReplaceByChild: failed, invalid child index", a.ChildIndex)
+		fmt.Fprintln(os.Stderr, "ReplaceByChild: failed, invalid child index", a.ChildIndex)
 		return node, false
 	}
-	// fmt.Println("ReplaceByChild: OK!, replaced by child index", a.ChildIndex)
 	return node.Children[a.ChildIndex], true
 }
 
@@ -137,7 +131,7 @@ func (a *InlineChildAction) Apply(pattern *Pattern, childPosition int, node *com
 		return node, false
 	}
 	if childPosition < 0 || childPosition >= len(node.Children) {
-		fmt.Println("InlineChildAction: invalid child position")
+		fmt.Fprintln(os.Stderr, "InlineChildAction: invalid child position")
 		return node, false
 	}
 
@@ -162,7 +156,7 @@ func (a *RotateOptionAction) Apply(pattern *Pattern, childPosition int, node *co
 	if node == nil {
 		return node, false
 	}
-	fmt.Println("Pattern:", *pattern)
+	fmt.Fprintln(os.Stderr, "Pattern:", *pattern)
 	k := a.Key
 	if node.Options[k] == "" {
 		node.Options[k] = a.Initial
@@ -270,7 +264,6 @@ type NewNodeChildAction struct {
 }
 
 func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
-	// fmt.Println("NewNodeChildAction: inserting new node", a.Name, "at position", childPosition)
 	if node == nil {
 		return node, false
 	}
@@ -280,26 +273,27 @@ func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *co
 		Children: []*common.Node{},
 	}
 	if a.Key != nil && a.Value != nil {
-		fmt.Println("NewNodeChildAction: setting option", *a.Key, "to", *a.Value)
+		fmt.Fprintln(os.Stderr, "NewNodeChildAction: setting option", *a.Key, "to", *a.Value)
 		newNode.Options[*a.Key] = *a.Value
 	}
+
+	offset := childPosition + a.Offset
+	var length int
 	if a.Length == nil {
+		length = len(node.Children) - offset
+	} else {
+		length = *a.Length
+	}
+
+	if offset == 0 && length == len(node.Children) {
 		newNode.Children = append(newNode.Children, node.Children...)
 		node.Children = []*common.Node{newNode}
 	} else {
-		// fmt.Println("NewNodeChildAction: inserting with offset", a.Offset, "and length", *a.Length)
-		offset := childPosition + a.Offset
-		// fmt.Println("NewNodeChildAction: calculated offset is", offset)
 		length := max(0, *a.Length)
 		N := min(offset+length, len(node.Children))
 		for i := offset; i < N; i++ {
 			newNode.Children = append(newNode.Children, node.Children[i])
 		}
-		// before := append(make([]*common.Node, 0), node.Children[:offset]...)
-		// after := append(make([]*common.Node, 0), node.Children[offset+length:]...)
-		// node.Children = append(before, newNode)
-		// node.Children = append(node.Children, after...)
-		// fmt.Println("Length of before:", len(before), "after:", len(after), "children now:", len(node.Children))
 		node.Children = append(node.Children[:offset], append([]*common.Node{newNode}, node.Children[offset+length:]...)...)
 	}
 	newNode.UpdateSpan()
@@ -311,13 +305,12 @@ type PermuteChildrenAction struct {
 }
 
 func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
-	// fmt.Println("PermuteChildrenAction: permuting children to new order", a.NewOrder)
 	if node == nil || len(a.NewOrder) < 2 {
 		return node, false
 	}
 	for _, idx := range a.NewOrder {
 		if idx < 0 || idx >= len(node.Children) {
-			fmt.Println("PermuteChildrenAction: invalid index in new order:", idx)
+			fmt.Fprintln(os.Stderr, "PermuteChildrenAction: invalid index in new order:", idx)
 			return node, false
 		}
 	}
