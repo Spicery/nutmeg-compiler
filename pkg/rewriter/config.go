@@ -34,11 +34,10 @@ type RewriteRule struct {
 // ActionConfig defines what action to take when a match is found
 // This is used for YAML unmarshaling and then converted to concrete Action implementations
 type ActionConfig struct {
-	ReplaceValue   *ReplaceValueConfig `yaml:"replaceValue,omitempty"`
-	ReplaceName    *ReplaceNameConfig  `yaml:"replaceName,omitempty"`
-	ReplaceByChild *int                `yaml:"replaceByChild,omitempty"`
-	InlineChild    bool                `yaml:"inlineChild,omitempty"`
-	// Repeat             *ActionConfig       `yaml:"repeat,omitempty"`
+	ReplaceValue       *ReplaceValueConfig `yaml:"replaceValue,omitempty"`
+	ReplaceName        *ReplaceNameConfig  `yaml:"replaceName,omitempty"`
+	ReplaceByChild     *int                `yaml:"replaceByChild,omitempty"`
+	InlineChild        bool                `yaml:"inlineChild,omitempty"`
 	RotateOption       *RotateOptionConfig `yaml:"rotateOption,omitempty"`
 	RemoveOption       *RemoveOptionConfig `yaml:"removeOption,omitempty"`
 	Sequence           []ActionConfig      `yaml:"sequence,omitempty"`
