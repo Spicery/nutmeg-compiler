@@ -7,39 +7,49 @@ passes:
   - name: Pass 0, handle ifnot/elseifnot
     downwards:
 
-      - name: ifnot
+      - name: part/if
+        match:
+          self:
+            name: part
+            key: keyword
+            value: if
+        action:
+          replaceValue:
+            key: iftype
+            with: if
+
+      - name: part/elseif
+        match:
+          self:
+            name: part
+            key: keyword
+            value: elseif
+        action:
+          replaceValue:
+            key: iftype
+            with: elseif
+
+      - name: part/ifnot
         match:
           self:
             name: part
             key: keyword
             value: ifnot
-          child:
-            siblingPosition: 0
         action:
-          sequence:
-            - replaceValue:
-                key: keyword
-                with: if
-            - newNodeChild:
-                name: not
-                count: 1
+          replaceValue:
+            key: iftype
+            with: if
 
-      - name: elseifnot
+      - name: part/elseifnot
         match:
           self:
             name: part
             key: keyword
             value: elseifnot
-          child:
-            siblingPosition: 0
         action:
-          sequence:
-            - replaceValue:
-                key: keyword
-                with: elseif
-            - newNodeChild:
-                name: not
-                count: 1
+          replaceValue:
+            key: iftype
+            with: elseif
 
    
     upwards:
@@ -49,12 +59,11 @@ passes:
             name: form
           child:
             name: part
-            key: keyword
+            key: iftype
             value: if
             siblingPosition: 0
         action:
           replaceName:
-            key: keyword
             with: if
 
       - name: add-else
@@ -75,13 +84,13 @@ passes:
             offset: 1
             length: 0
 
-      - name: Undo elseif
+      - name: normalise-elseif
         match:
           self:
             name: if
           child:
             name: part
-            key: keyword
+            key: iftype
             value: elseif
             siblingPosition: -3
         action:
@@ -90,36 +99,62 @@ passes:
             length: 3
         repeatOnSuccess: true
 
-
-
-  - name: Pass 1, remove <if><not>...</not>...</if>
-    upwards:
-      - name: part-not
-        match:
-          self:
-            name: part
-            count: 1
-          child:
-            name: not
-        action:
-          replaceByChild: 0
-
+  - name: Pass 1, introduce ifnot
+    downwards:
       - name: if-not
         match:
           self:
             name: if
-            value: true
-            count: 3
           child:
-            name: not
-            count: 1
+            name: part
+            key: keyword
+            value: ifnot          
             siblingPosition: 0
         action:
-          sequence:
-            - childAction:
-                replaceName: 
-                  with: seq
-            - permuteChildren: [1,2]
+          replaceName:
+            with: ifnot
+
+      - name: elseif-not
+        match:
+          self:
+            name: if
+          child:
+            name: part
+            key: keyword
+            value: elseifnot          
+            siblingPosition: 0
+        action:
+          replaceName:
+            with: ifnot
+
+  # - name: Pass 1, remove <if><not>...</not>...</if>
+  #   upwards:
+  #     - name: part-not
+  #       match:
+  #         self:
+  #           name: part
+  #           count: 1
+  #         child:
+  #           name: not
+  #       action:
+  #         replaceByChild: 0
+
+  #     - name: if-not
+  #       match:
+  #         self:
+  #           name: if
+  #           value: true
+  #           count: 3
+  #         child:
+  #           name: not
+  #           count: 1
+  #           siblingPosition: 0
+  #       action:
+  #         sequence:
+  #           - childAction:
+  #               replaceName: 
+  #                 with: seq
+  #           - permuteChildren: [1,2]
 
   - name: Pass 2, flatten seq
     downwards:
