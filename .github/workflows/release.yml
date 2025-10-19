@@ -10,20 +10,7 @@ permissions:
   packages: write
 
 jobs:
-  unittest:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.25'
-    
-    - name: Run unit tests
-      run: go test ./...
-
-  integration:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -33,20 +20,13 @@ jobs:
       with:
         go-version: '1.25'
 
-    - name: Build
-      run: go build -o nutmeg-tokenizer ./cmd/nutmeg-tokenizer
-
-    - name: Test with example files
+    - name: Test
       run: |
-        ./nutmeg-tokenizer --input examples/simple.nutmeg > /tmp/simple_output.json
-        ./nutmeg-tokenizer --input examples/numeric.nutmeg > /tmp/numeric_output.json
-        
-        # Verify the outputs are valid JSON
-        cat /tmp/simple_output.json | jq . > /dev/null
-        cat /tmp/numeric_output.json | jq . > /dev/null
+        go test ./...
+        (cd functests && uv run python3 functest.py --quiet --tests */*.yaml)
 
   release:
-    needs: [unittest, integration]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -70,11 +50,15 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Upload Linux binary for Docker
+    - name: Upload Linux binaries for Docker
       uses: actions/upload-artifact@v4
       with:
-        name: nutmeg-tokenizer-binary
-        path: dist/nutmeg-tokenizer_linux_amd64_v1/nutmeg-tokenizer
+        name: nutmeg-binaries
+        path: |
+          dist/nutmeg-tokenizer_Linux_x86_64/nutmeg-tokenizer
+          dist/nutmeg-parser_Linux_x86_64/nutmeg-parser
+          dist/nutmeg-rewriter_Linux_x86_64/nutmeg-rewriter
+          dist/nutmeg-convert-tree_Linux_x86_64/nutmeg-convert-tree
         retention-days: 1
 
   docker:
@@ -83,10 +67,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Download binary artifact
+    - name: Download binary artifacts
       uses: actions/download-artifact@v4
       with:
-        name: nutmeg-tokenizer-binary
+        name: nutmeg-binaries
         path: .
     
     - name: Extract tag name
