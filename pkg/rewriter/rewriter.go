@@ -24,9 +24,11 @@ type Rule struct {
 }
 
 type RewriterPass struct {
-	Name           string `yaml:"name,omitempty"`
-	DownwardsRules []*Rule
-	UpwardsRules   []*Rule
+	Name                string `yaml:"name,omitempty"`
+	DownwardsRules      []*Rule
+	UpwardsRules        []*Rule
+	DownwardsStartIndex map[string]int // Maps node name to starting rule index.
+	UpwardsStartIndex   map[string]int // Maps node name to starting rule index.
 }
 
 type Rewriter struct {
@@ -125,13 +127,276 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 				OnFailure: onFailure,
 			})
 		}
-		rewriter.Passes = append(rewriter.Passes, RewriterPass{
+		pass := RewriterPass{
 			Name:           passConfig.Name,
 			DownwardsRules: downwards,
 			UpwardsRules:   upwards,
-		})
+		}
+
+		// Optimization 1: Build name-based start index maps.
+		pass.DownwardsStartIndex = buildStartIndexMap(downwards)
+		pass.UpwardsStartIndex = buildStartIndexMap(upwards)
+
+		// Optimization 2: Optimize OnSuccess/OnFailure jumps.
+		optimizeRuleJumps(downwards)
+		optimizeRuleJumps(upwards)
+
+		rewriter.Passes = append(rewriter.Passes, pass)
 	}
 	return rewriter, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Performance Optimizations
+////////////////////////////////////////////////////////////////////////////////
+//
+// The following functions implement two compile-time optimizations to improve
+// runtime performance of rule matching:
+//
+// 1. Name-based Start Index Maps (buildStartIndexMap):
+//    Instead of checking all N rules for every node, we build a map from node
+//    name to the first rule that could potentially match. This allows us to
+//    skip all rules that require a different name.
+//
+// 2. Jump Target Optimization (optimizeRuleJumps):
+//    After a successful match, we often know what the node's name will be
+//    (either unchanged or changed to a predictable value by the action).
+//    We optimize OnSuccess/OnFailure jumps to skip rules that cannot possibly
+//    match based on name constraints.
+//
+//    Key insights:
+//    - If an action doesn't contain ReplaceNameWithAction or ReplaceNameFromAction,
+//      the node name remains unchanged after the action.
+//    - ReplaceNameWithAction changes the name to a known constant value.
+//    - ReplaceNameFromAction changes the name unpredictably (runtime-dependent).
+//    - For SequenceAction, we track name changes through the sequence.
+//
+// Both optimizations are performed once in NewRewriter at load time, so there
+// is no runtime overhead for these optimizations.
+
+// buildStartIndexMap creates a map from node name to the first rule index that could match.
+// Returns map[string]int where the value is the starting rule index for that node name.
+// If a name is not in the map, it means no rules apply (default to len(rules)).
+func buildStartIndexMap(rules []*Rule) map[string]int {
+	startIndex := make(map[string]int)
+	wildcardIndex := len(rules) // Default: no wildcard found.
+
+	fmt.Fprintln(os.Stderr, "[OPT1] Building start index map for", len(rules), "rules")
+
+	// Scan rules to find first occurrence of each name and any wildcard.
+	for i, rule := range rules {
+		if rule.Pattern != nil && rule.Pattern.Self != nil {
+			if rule.Pattern.Self.Name == nil {
+				// This is a wildcard rule.
+				if wildcardIndex == len(rules) {
+					wildcardIndex = i
+					fmt.Fprintf(os.Stderr, "[OPT1]   Rule #%d (%s): wildcard - set as default start index\n", i, rule.Name)
+				}
+			} else {
+				name := *rule.Pattern.Self.Name
+				if _, exists := startIndex[name]; !exists {
+					// First rule for this name.
+					startIndex[name] = i
+					fmt.Fprintf(os.Stderr, "[OPT1]   Rule #%d (%s): first rule for name '%s'\n", i, rule.Name, name)
+				}
+			}
+		}
+	}
+
+	// For names not in the map, they should start at the wildcard (if any) or skip all rules.
+	// We'll handle this by checking in applyRules: if not in map, use wildcardIndex.
+	// Store the wildcard index under a special key.
+	if wildcardIndex < len(rules) {
+		startIndex[""] = wildcardIndex // Empty string = default/wildcard.
+		fmt.Fprintf(os.Stderr, "[OPT1] Default start index (wildcard): %d\n", wildcardIndex)
+	} else {
+		startIndex[""] = len(rules) // No wildcard, skip all.
+		fmt.Fprintln(os.Stderr, "[OPT1] No wildcard found - unknown names will skip all rules")
+	}
+
+	return startIndex
+}
+
+// optimizeRuleJumps optimizes OnSuccess and OnFailure jumps by skipping rules that cannot match.
+// For each rule, if its OnSuccess/OnFailure points to a rule that cannot possibly match
+// the same node (based on name constraint), advance the pointer to skip impossible rules.
+func optimizeRuleJumps(rules []*Rule) {
+	fmt.Fprintln(os.Stderr, "[OPT2] Optimizing jump targets for", len(rules), "rules")
+	optimizationCount := 0
+
+	for i, rule := range rules {
+		oldSuccess := rule.OnSuccess
+		oldFailure := rule.OnFailure
+
+		rule.OnSuccess = optimizeJump(rule.OnSuccess, rules, rule, true)
+		rule.OnFailure = optimizeJump(rule.OnFailure, rules, rule, false)
+
+		if oldSuccess != rule.OnSuccess || oldFailure != rule.OnFailure {
+			optimizationCount++
+			fmt.Fprintf(os.Stderr, "[OPT2]   Rule #%d (%s):", i, rule.Name)
+			if oldSuccess != rule.OnSuccess {
+				fmt.Fprintf(os.Stderr, " OnSuccess: %d→%d", oldSuccess, rule.OnSuccess)
+			}
+			if oldFailure != rule.OnFailure {
+				fmt.Fprintf(os.Stderr, " OnFailure: %d→%d", oldFailure, rule.OnFailure)
+			}
+			fmt.Fprintln(os.Stderr)
+		}
+
+		_ = i // Suppress unused variable warning.
+	}
+
+	fmt.Fprintf(os.Stderr, "[OPT2] Optimized %d jump targets\n", optimizationCount)
+}
+
+// actionChangesName determines if an action might change the Self.Name of a node.
+// Returns: (changesName bool, newName *string, isDefinite bool)
+// - changesName: true if the action might change the name
+// - newName: the specific new name if predictable, nil otherwise
+// - isDefinite: true if we're certain about the new name
+func actionChangesName(action Action) (bool, *string, bool) {
+	if action == nil {
+		return false, nil, true
+	}
+
+	switch a := action.(type) {
+	case *ReplaceNameWithAction:
+		// Definite name change to a known value.
+		return true, &a.With, true
+
+	case *ReplaceNameFromAction:
+		// Name changes but we don't know to what (depends on runtime values).
+		return true, nil, false
+
+	case *SequenceAction:
+		// Check all actions in sequence.
+		// If any changes the name, we need to track it.
+		changesName := false
+		var finalName *string
+		isDefinite := true
+		for _, subAction := range a.Actions {
+			changes, name, definite := actionChangesName(subAction)
+			if changes {
+				changesName = true
+				finalName = name
+				if !definite {
+					isDefinite = false
+				}
+			}
+		}
+		return changesName, finalName, isDefinite
+
+	case *ChildAction:
+		// ChildAction modifies a child, not Self.Name.
+		return false, nil, true
+
+	case *ReplaceByChildAction:
+		// Replaces the entire node with a child - name will change unpredictably.
+		return true, nil, false
+
+	default:
+		// Other actions (ReplaceValueAction, RemoveOptionAction, etc.) don't change Self.Name.
+		return false, nil, true
+	}
+}
+
+// optimizeJump advances a jump target past rules that cannot possibly match.
+// Given a jump destination and the source rule, skip ahead if the destination
+// rule has a name constraint that conflicts with what we know about the node after the action.
+func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess bool) int {
+	if sourceRule == nil || sourceRule.Pattern == nil || sourceRule.Pattern.Self == nil {
+		return jumpTarget
+	}
+
+	originalTarget := jumpTarget
+
+	// Determine what we know about the node name after the action.
+	var expectedName *string
+	if isSuccess && sourceRule.Action != nil {
+		// After a successful match, we know the matched name (if not a wildcard).
+		matchedName := sourceRule.Pattern.Self.Name
+
+		// Check if the action changes the name.
+		changesName, newName, isDefinite := actionChangesName(*sourceRule.Action)
+
+		if changesName {
+			if isDefinite && newName != nil {
+				// We know the exact new name.
+				expectedName = newName
+				fmt.Fprintf(os.Stderr, "[OPT2]     Action changes name to '%s'\n", *expectedName)
+			} else {
+				// Name changes unpredictably, can't optimize.
+				fmt.Fprintln(os.Stderr, "[OPT2]     Action changes name unpredictably - can't optimize")
+				return jumpTarget
+			}
+		} else {
+			// Name doesn't change, use the matched name.
+			expectedName = matchedName
+			if expectedName != nil {
+				fmt.Fprintf(os.Stderr, "[OPT2]     Name unchanged: '%s'\n", *expectedName)
+			} else {
+				fmt.Fprintln(os.Stderr, "[OPT2]     Name unchanged: wildcard")
+			}
+		}
+	} else {
+		// On failure or no action, we can't predict the node.
+		return jumpTarget
+	}
+
+	// Now skip rules that can't match the expected name.
+	skipped := 0
+	for jumpTarget < len(rules) {
+		targetRule := rules[jumpTarget]
+		if targetRule == nil || targetRule.Pattern == nil {
+			// Invalid rule, skip it.
+			jumpTarget++
+			skipped++
+			continue
+		}
+
+		if targetRule.Pattern.Self == nil {
+			// No constraints on Self - matches anything (wildcard) - stop here.
+			if skipped > 0 {
+				fmt.Fprintf(os.Stderr, "[OPT2]     Stopped at rule #%d (no Self constraint) after skipping %d rules\n", jumpTarget, skipped)
+			}
+			break
+		}
+
+		targetName := targetRule.Pattern.Self.Name
+
+		if targetName == nil {
+			// Target is a wildcard, can match anything - stop here.
+			if skipped > 0 {
+				fmt.Fprintf(os.Stderr, "[OPT2]     Stopped at rule #%d (%s - wildcard) after skipping %d rules\n", jumpTarget, targetRule.Name, skipped)
+			}
+			break
+		}
+
+		if expectedName == nil {
+			// We don't know the name (wildcard source), target requires specific name - skip it.
+			jumpTarget++
+			skipped++
+			continue
+		}
+
+		if *targetName == *expectedName {
+			// Names match, this rule could apply - stop here.
+			if skipped > 0 {
+				fmt.Fprintf(os.Stderr, "[OPT2]     Stopped at rule #%d (%s - matches '%s') after skipping %d rules\n", jumpTarget, targetRule.Name, *expectedName, skipped)
+			}
+			break
+		}
+
+		// Names don't match, skip this rule.
+		jumpTarget++
+		skipped++
+	}
+
+	if jumpTarget != originalTarget && skipped == 0 {
+		fmt.Fprintf(os.Stderr, "[OPT2]     No optimization possible (target=%d)\n", jumpTarget)
+	}
+
+	return jumpTarget
 }
 
 func (r *Rewriter) Rewrite(node *common.Node) *common.Node {
@@ -154,15 +419,21 @@ func (r *RewriterPass) doRewrite(node *common.Node, path *Path) *common.Node {
 }
 
 func (r *RewriterPass) downwardsRewrites(node *common.Node, path *Path) *common.Node {
-	return applyRules(node, path, r.DownwardsRules)
+	return applyRules(node, path, r.DownwardsRules, r.DownwardsStartIndex)
 }
 
 func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path) *common.Node {
-	return applyRules(node, path, r.UpwardsRules)
+	return applyRules(node, path, r.UpwardsRules, r.UpwardsStartIndex)
 }
 
-func applyRules(node *common.Node, path *Path, rules []*Rule) *common.Node {
-	currentRule := 0
+func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[string]int) *common.Node {
+	// Optimization 1: Start at the first rule that could match this node's name.
+	currentRule := getStartIndex(node.Name, startIndexMap, len(rules))
+
+	if currentRule > 0 {
+		fmt.Fprintf(os.Stderr, "[OPT1] Node '%s': starting at rule #%d (skipped %d rules)\n", node.Name, currentRule, currentRule)
+	}
+
 	for currentRule < len(rules) {
 		rule := rules[currentRule]
 		if rule != nil && rule.Pattern != nil && rule.Action != nil {
@@ -182,4 +453,20 @@ func applyRules(node *common.Node, path *Path, rules []*Rule) *common.Node {
 		}
 	}
 	return node
+}
+
+// getStartIndex returns the starting rule index for a given node name.
+// If the name is in the map, return that index.
+// Otherwise, return the wildcard index (stored under "").
+// If no wildcard, return the default (skip all rules).
+func getStartIndex(nodeName string, startIndexMap map[string]int, defaultIndex int) int {
+	if idx, exists := startIndexMap[nodeName]; exists {
+		return idx
+	}
+	// Try wildcard (empty string key).
+	if idx, exists := startIndexMap[""]; exists {
+		return idx
+	}
+	// No matching rules at all.
+	return defaultIndex
 }
