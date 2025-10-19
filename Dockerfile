@@ -12,10 +12,10 @@ RUN addgroup -g 1000 nutmeg && \
 WORKDIR /usr/local/bin
 
 # Copy all four binaries from the artifact download
-COPY nutmeg-tokenizer /usr/local/bin/nutmeg-tokenizer
-COPY nutmeg-parser /usr/local/bin/nutmeg-parser
-COPY nutmeg-rewriter /usr/local/bin/nutmeg-rewriter
-COPY nutmeg-convert-tree /usr/local/bin/nutmeg-convert-tree
+COPY dist/nutmeg-tokenizer_linux_amd64_v1/nutmeg-tokenizer /usr/local/bin/nutmeg-tokenizer
+COPY dist/nutmeg-parser_linux_amd64_v1/nutmeg-parser /usr/local/bin/nutmeg-parser
+COPY dist/nutmeg-rewriter_linux_amd64_v1/nutmeg-rewriter /usr/local/bin/nutmeg-rewriter
+COPY dist/nutmeg-convert-tree_linux_amd64_v1/nutmeg-convert-tree /usr/local/bin/nutmeg-convert-tree
 
 # Make all binaries executable
 RUN chmod +x /usr/local/bin/nutmeg-* && \
