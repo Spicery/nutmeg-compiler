@@ -483,13 +483,7 @@ func (p *Parser) readPartExpressions(part *Node, arity *Arity) error {
 			part.Children = append(part.Children, expr)
 
 			// Check for semicolon separator
-			is_semicolon := p.TryReadToken(MarkTokenType, ";") != nil
-			if !is_semicolon {
-				nextToken := p.PeekToken()
-				if nextToken != nil && nextToken.LnBefore != nil && *nextToken.LnBefore {
-					is_semicolon = true
-				}
-			}
+			is_semicolon := p.TryReadSemiColon()
 			if !is_semicolon {
 				nextToken := p.PeekToken()
 
@@ -519,6 +513,17 @@ func (p *Parser) readPartExpressions(part *Node, arity *Arity) error {
 		part.Span = *newSpan
 	}
 	return nil
+}
+
+func (p *Parser) TryReadSemiColon() bool {
+	is_semicolon := p.TryReadToken(MarkTokenType, ";") != nil
+	if !is_semicolon {
+		nextToken := p.PeekToken()
+		if nextToken != nil && nextToken.LnBefore != nil && *nextToken.LnBefore {
+			is_semicolon = true
+		}
+	}
+	return is_semicolon
 }
 
 func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {

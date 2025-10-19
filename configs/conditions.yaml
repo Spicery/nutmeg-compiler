@@ -1,4 +1,4 @@
-# A simple substitutions file for nutmeg-parser that shows the 
+# A simple substitutions file for nutmeg-parser that shows the
 # format.
 name: if-expressions
 description: Rewrite if-statements into canonical form
@@ -51,7 +51,6 @@ passes:
             key: iftype
             with: elseif
 
-   
     upwards:
       - name: form->if
         match:
@@ -108,7 +107,7 @@ passes:
           child:
             name: part
             key: keyword
-            value: ifnot          
+            value: ifnot
             siblingPosition: 0
         action:
           replaceName:
@@ -121,55 +120,8 @@ passes:
           child:
             name: part
             key: keyword
-            value: elseifnot          
+            value: elseifnot
             siblingPosition: 0
         action:
           replaceName:
             with: ifnot
-
-  # - name: Pass 1, remove <if><not>...</not>...</if>
-  #   upwards:
-  #     - name: part-not
-  #       match:
-  #         self:
-  #           name: part
-  #           count: 1
-  #         child:
-  #           name: not
-  #       action:
-  #         replaceByChild: 0
-
-  #     - name: if-not
-  #       match:
-  #         self:
-  #           name: if
-  #           value: true
-  #           count: 3
-  #         child:
-  #           name: not
-  #           count: 1
-  #           siblingPosition: 0
-  #       action:
-  #         sequence:
-  #           - childAction:
-  #               replaceName: 
-  #                 with: seq
-  #           - permuteChildren: [1,2]
-
-  - name: Pass 2, flatten seq
-    downwards:
-      - name: part -> seq
-        match:
-          self:
-            name: part
-        action:
-          replaceName:
-            with: seq
-
-      - name: seq-1
-        match:
-          self:
-            name: seq
-            count: 1
-        action:
-          replaceByChild: 0

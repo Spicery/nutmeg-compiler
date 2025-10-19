@@ -50,6 +50,15 @@ func main() {
 			tree.Span = *tree.Span.ToSpan(&node.Span)
 		}
 		tree.Children = append(tree.Children, node)
+		// Check for semicolon separator
+		is_semicolon := p.TryReadSemiColon()
+		if !is_semicolon {
+			if p.PeekToken() != nil {
+				fmt.Fprintf(os.Stderr, "Unexpected token at end of expression: `%s`\n", p.PeekToken().Text)
+				os.Exit(1)
+			}
+			break
+		}
 	}
 	printFunc(tree, "  ", os.Stdout, &common.PrintOptions{
 		TrimTokenOnOutput: *trim,

@@ -181,7 +181,7 @@ passes:
       - name: Change ':=' to bind (POP)
         match:
           self:
-            name: operatoronSuccess
+            name: operator
             key: name
             value: ":="
             count: 2

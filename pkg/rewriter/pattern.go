@@ -3,17 +3,46 @@ package rewriter
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/spicery/nutmeg-compiler/pkg/common"
+	"gopkg.in/yaml.v3"
 )
 
 type NodePattern struct {
-	Name            *string `yaml:"name,omitempty"`
-	Key             *string `yaml:"key,omitempty"`
-	Value           *string `yaml:"value,omitempty"`
-	Cmp             *bool   `yaml:"cmp,omitempty"`
-	Count           *int    `yaml:"count,omitempty"`
-	SiblingPosition *int    `yaml:"siblingPosition,omitempty"`
+	Name            *string        `yaml:"name,omitempty"`
+	Key             *string        `yaml:"key,omitempty"`
+	Value           *string        `yaml:"value,omitempty"`
+	PatternString   *string        `yaml:"matches,omitempty"`
+	Pattern         *regexp.Regexp `yaml:"-"` // Compiled regexp, not marshaled.
+	Cmp             *bool          `yaml:"cmp,omitempty"`
+	Count           *int           `yaml:"count,omitempty"`
+	SiblingPosition *int           `yaml:"siblingPosition,omitempty"`
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling with validation.
+func (np *NodePattern) UnmarshalYAML(node *yaml.Node) error {
+	// Create an alias type to avoid infinite recursion.
+	type nodePatternAlias NodePattern
+	aux := (*nodePatternAlias)(np)
+
+	if err := node.Decode(aux); err != nil {
+		return err
+	}
+
+	// Compile the regexp if pattern string is present.
+	if np.PatternString != nil {
+		// Anchor the pattern at both start and end to ensure full string match.
+		// Use a non-capturing group to treat the user's pattern as a single unit.
+		anchoredPattern := "^(?:" + *np.PatternString + ")$"
+		compiled, err := regexp.Compile(anchoredPattern)
+		if err != nil {
+			return fmt.Errorf("invalid regexp in 'matches': %w", err)
+		}
+		np.Pattern = compiled
+	}
+
+	return nil
 }
 
 // GetCmp returns the comparison value, defaulting to true if not set
@@ -45,6 +74,12 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 		}
 		if np.Value != nil && (val == *np.Value) != np.GetCmp() {
 			return false
+		}
+		if np.Pattern != nil {
+			matched := np.Pattern.MatchString(val)
+			if matched != np.GetCmp() {
+				return false
+			}
 		}
 	}
 	if np.Count != nil && len(node.Children) != *np.Count {

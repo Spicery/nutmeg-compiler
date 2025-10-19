@@ -1,0 +1,42 @@
+name: Rewrite bindings and assignments
+Description: |
+  Rewrite binding and assignment operators to canonical forms. Should be
+  independent of rewrites to syscalls or function application syntax.
+  
+passes:
+
+  - name: Pass 1
+    downwards:
+
+      - name: Change ':=' to bind (POP)
+        match:
+          self:
+            name: operator
+            key: name
+            value: ":="
+            count: 2
+        action:
+          replaceName:
+            with: bind
+
+      - name: Change '<-' to assign (POP)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "<-"
+            count: 2
+        action:
+          replaceName:
+            with: assign
+
+      - name: Change '<--' to update (UCALL)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "<--"
+            count: 2
+        action:
+          replaceName:
+            with: update

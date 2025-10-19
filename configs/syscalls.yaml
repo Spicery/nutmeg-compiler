@@ -1,0 +1,17 @@
+name: syscalls
+description: Convert operators to syscalls
+passes:
+
+  - name: Simple operator conversions
+    downwards:
+
+      - name: add
+        match:
+          self:
+            name: operator
+            key: name
+            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
+        action:
+          replaceName:
+            with: syscall
+
