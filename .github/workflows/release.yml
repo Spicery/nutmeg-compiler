@@ -61,10 +61,10 @@ jobs:
       with:
         name: nutmeg-binaries
         path: |
-          dist/nutmeg-tokenizer_*_Linux_x86_64*/nutmeg-tokenizer
-          dist/nutmeg-parser_*_Linux_x86_64*/nutmeg-parser
-          dist/nutmeg-rewriter_*_Linux_x86_64*/nutmeg-rewriter
-          dist/nutmeg-convert-tree_*_Linux_x86_64*/nutmeg-convert-tree
+          dist/nutmeg-tokenizer_linux_amd64_v1/nutmeg-tokenizer
+          dist/nutmeg-parser_linux_amd64_v1/nutmeg-parser
+          dist/nutmeg-rewriter_linux_amd64_v1/nutmeg-rewriter
+          dist/nutmeg-convert-tree_linux_amd64_v1/nutmeg-convert-tree
         retention-days: 1
 
   docker:
