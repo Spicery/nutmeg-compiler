@@ -1,0 +1,17 @@
+name: let
+description: Canonize let forms
+passes:
+  - name: Pass 1
+    downwards:
+      - name: Fuse let parts
+        match:
+          self:
+            name: form
+            count: 2
+          child:
+            name: part
+            key: keyword
+            value: let
+            siblingPosition: 0
+        action:
+          mergeChildWithNext: false

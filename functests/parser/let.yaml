@@ -1,0 +1,61 @@
+# The top-level normalization flag applies to all tests unless overridden.
+normalize: xml
+tests:
+
+  - name: let without do
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
+    input: |
+      let x := 10
+          y := 20
+          x + y
+      endlet
+    expected_output: |
+      <unit>
+        <form syntax="surround">
+          <part keyword="let">
+            <operator name=":=" syntax="infix">
+              <id name="x"/>
+              <number base="10" exponent="0" fraction="" mantissa="10" sign="+"/>
+            </operator>
+            <operator name=":=" syntax="infix">
+              <id name="y"/>
+              <number base="10" exponent="0" fraction="" mantissa="20" sign="+"/>
+            </operator>
+            <operator name="+" syntax="infix">
+              <id name="x"/>
+              <id name="y"/>
+            </operator>
+          </part>
+        </form>
+      </unit>
+
+  - name: let with do
+    command: "go run ../cmd/nutmeg-tokenizer | go run ../cmd/nutmeg-parser -f xml --no-spans"
+    input: |
+      let x := 10
+          y := 20
+      do
+          x + y
+      endlet
+    expected_output: |
+      <unit>
+        <form syntax="surround">
+          <part keyword="let">
+            <operator name=":=" syntax="infix">
+              <id name="x"/>
+              <number base="10" exponent="0" fraction="" mantissa="10" sign="+"/>
+            </operator>
+            <operator name=":=" syntax="infix">
+              <id name="y"/>
+              <number base="10" exponent="0" fraction="" mantissa="20" sign="+"/>
+            </operator>
+          </part>
+          <part keyword="do">
+            <operator name="+" syntax="infix">
+              <id name="x"/>
+              <id name="y"/>
+            </operator>
+          </part>
+        </form>
+      </unit>
+

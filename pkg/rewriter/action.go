@@ -224,6 +224,7 @@ func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.No
 }
 
 type MergeChildWithNextAction struct {
+	NextTakesPriority bool
 }
 
 func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
@@ -236,7 +237,11 @@ func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, no
 	child := node.Children[childPosition]
 	nextChild := node.Children[childPosition+1]
 	child.Children = append(child.Children, nextChild.Children...)
-	child.Options = mergeOptions(child.Options, nextChild.Options)
+	if a.NextTakesPriority {
+		child.Options = mergeOptions(child.Options, nextChild.Options)
+	} else {
+		child.Options = mergeOptions(nextChild.Options, child.Options)
+	}
 	child.Span = *child.Span.ToSpan(&nextChild.Span)
 	// Remove nextChild from node.Children
 	node.Children = append(node.Children[:childPosition+1], node.Children[childPosition+2:]...)

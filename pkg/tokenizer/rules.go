@@ -249,7 +249,7 @@ func getDefaultStartTokens() map[string]StartTokenData {
 			Arity:     One,
 		},
 		"let": {
-			Expecting: []string{"end", "endlet"},
+			Expecting: []string{"end", "endlet", "do"},
 			ClosedBy:  []string{"end", "endlet"},
 			Arity:     Many,
 		},
@@ -309,8 +309,8 @@ func getDefaultBridgeTokens() map[string]BridgeTokenData {
 			Arity:     Many,
 		},
 		"do": {
-			Expecting: []string{"end", "endfor"},
-			In:        []string{"def", "for"},
+			Expecting: []string{"end", "endfor", "endlet"},
+			In:        []string{"for", "let"},
 			Arity:     Many,
 		},
 		"then": {

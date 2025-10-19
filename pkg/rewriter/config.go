@@ -42,7 +42,7 @@ type ActionConfig struct {
 	RemoveOption       *RemoveOptionConfig `yaml:"removeOption,omitempty"`
 	Sequence           []ActionConfig      `yaml:"sequence,omitempty"`
 	ChildAction        *ActionConfig       `yaml:"childAction,omitempty"`
-	MergeChildWithNext bool                `yaml:"mergeChildWithNext,omitempty"`
+	MergeChildWithNext *bool               `yaml:"mergeChildWithNext,omitempty"`
 	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
 	PermuteChildren    []int               `yaml:"permuteChildren,omitempty"`
 }
@@ -117,7 +117,7 @@ func (ac ActionConfig) Validate() error {
 	if ac.ChildAction != nil {
 		count++
 	}
-	if ac.MergeChildWithNext {
+	if ac.MergeChildWithNext != nil {
 		count++
 	}
 	if ac.NewNodeChild != nil {
@@ -223,8 +223,8 @@ func (ac ActionConfig) ToAction() (Action, error) {
 		}
 		return &ChildAction{Action: childAction}, nil
 	}
-	if ac.MergeChildWithNext {
-		return &MergeChildWithNextAction{}, nil
+	if ac.MergeChildWithNext != nil {
+		return &MergeChildWithNextAction{NextTakesPriority: *ac.MergeChildWithNext}, nil
 	}
 	if ac.NewNodeChild != nil {
 		return &NewNodeChildAction{Name: ac.NewNodeChild.Name, Key: ac.NewNodeChild.Key, Value: ac.NewNodeChild.Value, Offset: ac.NewNodeChild.Offset, Length: ac.NewNodeChild.Length}, nil
