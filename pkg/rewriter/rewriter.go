@@ -25,6 +25,8 @@ type Rule struct {
 
 type RewriterPass struct {
 	Name                string `yaml:"name,omitempty"`
+	SinglePass          bool   // If true, this pass runs once and is then skipped.
+	Skippable           bool   // Set to true after a single-pass has completed.
 	DownwardsRules      []*Rule
 	UpwardsRules        []*Rule
 	DownwardsStartIndex map[string]int // Maps node name to starting rule index.
@@ -129,6 +131,8 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 		}
 		pass := RewriterPass{
 			Name:           passConfig.Name,
+			SinglePass:     passConfig.SinglePass,
+			Skippable:      false,
 			DownwardsRules: downwards,
 			UpwardsRules:   upwards,
 		}
@@ -401,11 +405,25 @@ func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess boo
 
 func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 	anyChanged := false
-	for _, pass := range r.Passes {
+	for i := range r.Passes {
+		pass := &r.Passes[i]
+
+		// Skip passes that have been marked as skippable.
+		if pass.Skippable {
+			fmt.Fprintf(os.Stderr, "Skipping pass '%s' (single-pass already completed)\n", pass.Name)
+			continue
+		}
+
 		var changed bool
 		node, changed = pass.doRewrite(node, nil)
 		if changed {
 			anyChanged = true
+		}
+
+		// Mark single-pass passes as skippable after first execution.
+		if pass.SinglePass && !pass.Skippable {
+			pass.Skippable = true
+			fmt.Fprintf(os.Stderr, "Marking pass '%s' as skippable (single-pass completed)\n", pass.Name)
 		}
 	}
 	return node, anyChanged
