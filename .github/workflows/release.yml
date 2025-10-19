@@ -53,15 +53,18 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: List dist directory
+      run: ls -R dist/
+    
     - name: Upload Linux binaries for Docker
       uses: actions/upload-artifact@v4
       with:
         name: nutmeg-binaries
         path: |
-          dist/nutmeg-tokenizer_Linux_x86_64/nutmeg-tokenizer
-          dist/nutmeg-parser_Linux_x86_64/nutmeg-parser
-          dist/nutmeg-rewriter_Linux_x86_64/nutmeg-rewriter
-          dist/nutmeg-convert-tree_Linux_x86_64/nutmeg-convert-tree
+          dist/nutmeg-tokenizer_*_Linux_x86_64*/nutmeg-tokenizer
+          dist/nutmeg-parser_*_Linux_x86_64*/nutmeg-parser
+          dist/nutmeg-rewriter_*_Linux_x86_64*/nutmeg-rewriter
+          dist/nutmeg-convert-tree_*_Linux_x86_64*/nutmeg-convert-tree
         retention-days: 1
 
   docker:
