@@ -249,7 +249,7 @@ func getDefaultStartTokens() map[string]StartTokenData {
 			Arity:     One,
 		},
 		"let": {
-			Expecting: []string{},
+			Expecting: []string{"end", "endlet"},
 			ClosedBy:  []string{"end", "endlet"},
 			Arity:     Many,
 		},
