@@ -21,7 +21,7 @@ const DEFAULT_FORMAT = "JSON"
 func main() {
 	var showHelp, showVersion, noSpans bool
 	var inputFile, outputFile, configFile, format string
-	var trim int
+	var trim, maxRewrites int
 
 	// Set up custom usage function that includes the description and flags
 	flag.Usage = func() {
@@ -40,6 +40,7 @@ func main() {
 	flag.StringVar(&format, "format", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
 	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
 	flag.BoolVar(&noSpans, "no-spans", false, "Suppress span information in output")
+	flag.IntVar(&maxRewrites, "max-rewrites", 0, "Maximum number of rewrite iterations (0 = unlimited)")
 
 	flag.Parse()
 
@@ -113,7 +114,38 @@ func main() {
 	}
 
 	if r != nil {
-		node = r.Rewrite(node)
+		// Repeat rewriting until no changes occur (fixed point).
+		iteration := 0
+		reachedFixedPoint := false
+
+		for {
+			iteration++
+
+			// Check if we've hit the iteration limit.
+			if maxRewrites > 0 && iteration > maxRewrites {
+				fmt.Fprintf(os.Stderr, "=== Stopped: reached maximum iterations (%d) ===\n", maxRewrites)
+				break
+			}
+
+			fmt.Fprintf(os.Stderr, "=== Rewrite iteration %d ===\n", iteration)
+
+			var changed bool
+			node, changed = r.Rewrite(node)
+
+			if changed {
+				fmt.Fprintln(os.Stderr, "Rewrite modified the tree - continuing")
+			} else {
+				fmt.Fprintln(os.Stderr, "Rewrite made no changes - fixed point reached")
+				reachedFixedPoint = true
+				break
+			}
+		}
+
+		if reachedFixedPoint {
+			fmt.Fprintf(os.Stderr, "=== Completed after %d iteration(s) ===\n", iteration)
+		} else {
+			fmt.Fprintf(os.Stderr, "=== Warning: Did not reach fixed point after %d iteration(s) ===\n", iteration-1)
+		}
 	}
 
 	printFunc(node, "  ", output, &common.PrintOptions{

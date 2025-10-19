@@ -399,34 +399,54 @@ func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess boo
 	return jumpTarget
 }
 
-func (r *Rewriter) Rewrite(node *common.Node) *common.Node {
+func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
+	anyChanged := false
 	for _, pass := range r.Passes {
-		node = pass.doRewrite(node, nil)
+		var changed bool
+		node, changed = pass.doRewrite(node, nil)
+		if changed {
+			anyChanged = true
+		}
 	}
-	return node
+	return node, anyChanged
 }
 
-func (r *RewriterPass) doRewrite(node *common.Node, path *Path) *common.Node {
+func (r *RewriterPass) doRewrite(node *common.Node, path *Path) (*common.Node, bool) {
 	if node == nil {
-		return nil
+		return nil, false
 	}
-	node = r.downwardsRewrites(node, path)
+	anyChanged := false
+	var changed bool
+
+	node, changed = r.downwardsRewrites(node, path)
+	if changed {
+		anyChanged = true
+	}
+
 	for i := 0; i < len(node.Children); i++ {
-		node.Children[i] = r.doRewrite(node.Children[i], &Path{SiblingPosition: i, Parent: node, Others: path})
+		node.Children[i], changed = r.doRewrite(node.Children[i], &Path{SiblingPosition: i, Parent: node, Others: path})
+		if changed {
+			anyChanged = true
+		}
 	}
-	node = r.upwardsRewrites(node, path)
-	return node
+
+	node, changed = r.upwardsRewrites(node, path)
+	if changed {
+		anyChanged = true
+	}
+
+	return node, anyChanged
 }
 
-func (r *RewriterPass) downwardsRewrites(node *common.Node, path *Path) *common.Node {
+func (r *RewriterPass) downwardsRewrites(node *common.Node, path *Path) (*common.Node, bool) {
 	return applyRules(node, path, r.DownwardsRules, r.DownwardsStartIndex)
 }
 
-func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path) *common.Node {
+func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path) (*common.Node, bool) {
 	return applyRules(node, path, r.UpwardsRules, r.UpwardsStartIndex)
 }
 
-func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[string]int) *common.Node {
+func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[string]int) (*common.Node, bool) {
 	// Optimization 1: Start at the first rule that could match this node's name.
 	currentRule := getStartIndex(node.Name, startIndexMap, len(rules))
 
@@ -434,6 +454,7 @@ func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[
 		fmt.Fprintf(os.Stderr, "[OPT1] Node '%s': starting at rule #%d (skipped %d rules)\n", node.Name, currentRule, currentRule)
 	}
 
+	anyChanged := false
 	for currentRule < len(rules) {
 		rule := rules[currentRule]
 		if rule != nil && rule.Pattern != nil && rule.Action != nil {
@@ -443,6 +464,7 @@ func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[
 				replacement_node, changed := (*rule.Action).Apply(rule.Pattern, n, node, path)
 				if changed {
 					node = replacement_node
+					anyChanged = true
 				}
 				currentRule = rule.OnSuccess
 				fmt.Fprintln(os.Stderr, "Success with rule", rule.Name, ", moving to rule #", currentRule)
@@ -452,7 +474,7 @@ func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[
 			}
 		}
 	}
-	return node
+	return node, anyChanged
 }
 
 // getStartIndex returns the starting rule index for a given node name.
