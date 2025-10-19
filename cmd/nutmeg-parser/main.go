@@ -9,6 +9,9 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/parser"
 )
 
+// Version is injected at build time via ldflags.
+var Version = "dev"
+
 const DEFAULT_FORMAT = "JSON"
 
 func main() {
@@ -18,8 +21,15 @@ func main() {
 	var srcPath = flag.String("src-path", "", "Source path to annotate the unit with origin")
 	var trim = flag.Int("trim", 0, "Trim names for display purposes")
 	var noSpans = flag.Bool("no-spans", false, "Suppress span information in output")
+	var version = flag.Bool("version", false, "Print version and exit")
 
 	flag.Parse()
+
+	// Handle version flag.
+	if *version {
+		fmt.Printf("nutmeg-parser version %s\n", Version)
+		os.Exit(0)
+	}
 
 	// Use the long form if provided, otherwise use the short form.
 	selectedFormat := *format

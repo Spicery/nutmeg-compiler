@@ -11,9 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	version = "0.1.0"
-	usage   = `nutmeg-tokenizer - A tokenizer for the Nutmeg programming language
+// Version is injected at build time via ldflags.
+var Version = "dev"
+
+const usage = `nutmeg-tokenizer - A tokenizer for the Nutmeg programming language
 
 Usage:
   nutmeg-tokenizer [options]
@@ -39,7 +40,6 @@ Examples:
 The tokenizer outputs one JSON token object per line.
 See docs/rules_file.md for information about custom rules files.
 `
-)
 
 func main() {
 	var showHelp, showVersion, exit0, makeRules bool
@@ -67,7 +67,7 @@ func main() {
 	}
 
 	if showVersion {
-		fmt.Printf("nutmeg-tokenizer version %s\n", version)
+		fmt.Printf("nutmeg-tokenizer version %s\n", Version)
 		os.Exit(0)
 	}
 

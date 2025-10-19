@@ -11,10 +11,10 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/rewriter"
 )
 
-const (
-	version = "0.1.0"
-	usage   = `nutmeg-rewrite - a tree rewriter for the Nutmeg programming language`
-)
+// Version is injected at build time via ldflags.
+var Version = "dev"
+
+const usage = `nutmeg-rewrite - a tree rewriter for the Nutmeg programming language`
 
 const DEFAULT_FORMAT = "JSON"
 
@@ -49,7 +49,7 @@ func main() {
 	}
 
 	if showVersion {
-		fmt.Printf("nutmeg-rewrite version %s\n", version)
+		fmt.Printf("nutmeg-rewrite version %s\n", Version)
 		os.Exit(0)
 	}
 
