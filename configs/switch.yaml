@@ -1,0 +1,44 @@
+name: switch
+description: Canonize switch forms
+passes:
+  - name: Pass 1
+    downwards:
+      - name: remove endcase
+        match:
+          self:
+            name: form
+          child:
+            name: part
+            key: keyword
+            value: endcase
+        action:
+          removeChild: true
+
+      - name: mark else part as default
+        match:
+          parent:
+            name: form
+          self:
+            name: part
+            key: keyword
+            value: else
+        action:
+          replaceName:
+            with: default
+
+      - name: mark case and then parts
+        match:
+          parent:
+            name: form
+          self:
+            name: part
+            key: keyword
+            matches: case|then
+        action:
+          replaceName:
+            src: self
+            from: value
+
+
+
+

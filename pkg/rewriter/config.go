@@ -42,6 +42,7 @@ type ActionConfig struct {
 	RemoveOption       *RemoveOptionConfig `yaml:"removeOption,omitempty"`
 	Sequence           []ActionConfig      `yaml:"sequence,omitempty"`
 	ChildAction        *ActionConfig       `yaml:"childAction,omitempty"`
+	RemoveChild        bool                `yaml:"removeChild,omitempty"`
 	MergeChildWithNext *bool               `yaml:"mergeChildWithNext,omitempty"`
 	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
 	PermuteChildren    []int               `yaml:"permuteChildren,omitempty"`
@@ -123,6 +124,9 @@ func (ac ActionConfig) Validate() error {
 	if ac.NewNodeChild != nil {
 		count++
 	}
+	if ac.RemoveChild {
+		count++
+	}
 	if len(ac.PermuteChildren) > 0 {
 		// fmt.Println("PermuteChildren count:", len(ac.PermuteChildren))
 		count++
@@ -171,7 +175,19 @@ func (ac ActionConfig) ToAction() (Action, error) {
 			return &ReplaceNameFromAction{From: *ac.ReplaceName.From, Source: ac.ReplaceName.Source}, nil
 		}
 		// Return nil if no valid action is found
-		return nil, fmt.Errorf("no valid action found in ReplaceNameConfig: with %s, from %s, src %s", *ac.ReplaceName.With, *ac.ReplaceName.From, ac.ReplaceName.Source)
+		with := "nil"
+		if ac.ReplaceName.With != nil {
+			with = *ac.ReplaceName.With
+		}
+		from := "nil"
+		if ac.ReplaceName.From != nil {
+			from = *ac.ReplaceName.From
+		}
+		src := "nil"
+		if ac.ReplaceName.Source != "" {
+			src = ac.ReplaceName.Source
+		}
+		return nil, fmt.Errorf("no valid action found in ReplaceNameConfig: with %s, from %s, src %s", with, from, src)
 	}
 	if ac.ReplaceByChild != nil {
 		return &ReplaceByChildAction{ChildIndex: *ac.ReplaceByChild}, nil
@@ -179,13 +195,9 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	if ac.InlineChild {
 		return &InlineChildAction{}, nil
 	}
-	// if ac.Repeat != nil {
-	// 	repeatAction, err := ac.Repeat.ToAction()
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("error in nested repeat action: %w", err)
-	// 	}
-	// 	return &RepeatAction{Action: repeatAction}, nil
-	// }
+	if ac.RemoveChild {
+		return &RemoveChildAction{}, nil
+	}
 	if ac.RotateOption != nil {
 		if ac.RotateOption.Key != "" && len(ac.RotateOption.Values) >= 2 {
 			initial := ac.RotateOption.Values[0]

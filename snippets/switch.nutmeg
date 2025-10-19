@@ -1,0 +1,9 @@
+switch x
+    case 1:
+        a
+    case 2:
+        b
+    else
+        z
+    endcase
+endswitch

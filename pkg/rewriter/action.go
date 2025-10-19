@@ -69,6 +69,7 @@ func fetchFrom(from string, key *string, node *common.Node) string {
 		if key == nil {
 			return ""
 		}
+		fmt.Fprintln(os.Stderr, "fetchFrom: fetching value for key", *key)
 		return node.Options[*key]
 	case "key":
 		if key == nil {
@@ -330,5 +331,21 @@ func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node 
 	}
 	// Place the first element in the position of the last element
 	node.Children[a.NewOrder[len(a.NewOrder)-1]] = tmp
+	return node, true
+}
+
+type RemoveChildAction struct {
+}
+
+func (a *RemoveChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+	if node == nil {
+		return node, false
+	}
+	if childPosition < 0 || childPosition >= len(node.Children) {
+		fmt.Fprintln(os.Stderr, "RemoveChildAction: invalid child position")
+		return node, false
+	}
+	// Remove the child at childPosition
+	node.Children = append(node.Children[:childPosition], node.Children[childPosition+1:]...)
 	return node, true
 }
