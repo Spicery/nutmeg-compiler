@@ -225,7 +225,7 @@ passes:
             key: kind
             value: brackets
         action:
-            mergeChildWithNext: true
+            mergeChildWithNext: false
         repeatOnSuccess: true
 
       - name: Anotation Merge (Step 1b)
