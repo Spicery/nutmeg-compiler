@@ -47,7 +47,6 @@ func main() {
 
 	flag.BoolVar(&showHelp, "h", false, "Show help")
 	flag.BoolVar(&showHelp, "help", false, "Show help")
-	flag.BoolVar(&showVersion, "v", false, "Show version")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 	flag.BoolVar(&exit0, "exit0", false, "Exit with code 0 even on errors")
 	flag.BoolVar(&makeRules, "make-rules", false, "Generate default rules YAML")

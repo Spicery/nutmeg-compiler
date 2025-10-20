@@ -31,7 +31,6 @@ func main() {
 
 	flag.BoolVar(&showHelp, "h", false, "Show help")
 	flag.BoolVar(&showHelp, "help", false, "Show help")
-	flag.BoolVar(&showVersion, "v", false, "Show version")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
