@@ -19,7 +19,7 @@ const usage = `nutmeg-rewrite - a tree rewriter for the Nutmeg programming langu
 const DEFAULT_FORMAT = "JSON"
 
 func main() {
-	var showHelp, showVersion, noSpans bool
+	var showHelp, showVersion, noSpans, makeRules bool
 	var inputFile, outputFile, configFile, format string
 	var trim, maxRewrites int
 
@@ -32,6 +32,7 @@ func main() {
 	flag.BoolVar(&showHelp, "h", false, "Show help")
 	flag.BoolVar(&showHelp, "help", false, "Show help")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
+	flag.BoolVar(&makeRules, "make-rewrite-rules", false, "Generate default rewrite rules YAML")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
 	flag.StringVar(&configFile, "rewrite-rules", "", "YAML file containing rewrite rules")
@@ -50,6 +51,11 @@ func main() {
 
 	if showVersion {
 		fmt.Printf("nutmeg-rewrite version %s\n", Version)
+		os.Exit(0)
+	}
+
+	if makeRules {
+		fmt.Print(DefaultRewriteRules)
 		os.Exit(0)
 	}
 
