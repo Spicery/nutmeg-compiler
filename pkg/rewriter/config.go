@@ -264,3 +264,14 @@ func LoadRewriteConfig(filename string) (*RewriteConfig, error) {
 
 	return &rewriteConfig, nil
 }
+
+// LoadRewriteConfigFromString loads a RewriteConfig from a YAML string.
+func LoadRewriteConfigFromString(yamlContent string) (*RewriteConfig, error) {
+	var rewriteConfig RewriteConfig
+	err := yaml.Unmarshal([]byte(yamlContent), &rewriteConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rewriteConfig, nil
+}

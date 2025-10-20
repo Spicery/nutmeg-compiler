@@ -70,6 +70,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error loading rewrite configuration file: %v\n", err)
 			os.Exit(1)
 		}
+	} else {
+		rewriteConfig, err = rewriter.LoadRewriteConfigFromString(DefaultRewriteRules)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading default rewrite rules: %v\n", err)
+			os.Exit(1)
+		}
 	}
 	var r *rewriter.Rewriter
 	if rewriteConfig != nil {
