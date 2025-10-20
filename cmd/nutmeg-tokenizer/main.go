@@ -21,11 +21,11 @@ Usage:
 
 Options:
   -h, --help            Show this help message
-  -v, --version         Show version information
+  --version             Show version information
   --input <file>        Input file (defaults to stdin)
   --output <file>       Output file (defaults to stdout)
-  --config <file>       YAML rules file for custom tokenisation rules (optional)
-  --make-config         Generate default rules YAML to stdout
+  --token-rules <file>  YAML rules file for custom tokenisation rules (optional)
+  --make-token-rules    Generate default rules YAML to stdout
   --exit0               Exit with code 0 even on tokenisation errors (suppress stderr)
 
 Examples:
@@ -33,8 +33,8 @@ Examples:
   nutmeg-tokenizer --input source.nutmeg             # Read from file, write to stdout
   nutmeg-tokenizer --output tokens.json              # Read from stdin, write to file
   nutmeg-tokenizer --input source.nutmeg --output tokens.json  # Read from file, write to file
-  nutmeg-tokenizer --rules custom.yaml --input source.nutmeg   # Use custom rules
-  nutmeg-tokenizer --make-rules                      # Generate default rules configuration
+  nutmeg-tokenizer --token-rules custom.yaml --input source.nutmeg   # Use custom rules
+  nutmeg-tokenizer --make-token-rules                # Generate default rules configuration
   echo "def foo end" | nutmeg-tokenizer              # Read from stdin, write to stdout
 
 The tokenizer outputs one JSON token object per line.
@@ -49,10 +49,10 @@ func main() {
 	flag.BoolVar(&showHelp, "help", false, "Show help")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 	flag.BoolVar(&exit0, "exit0", false, "Exit with code 0 even on errors")
-	flag.BoolVar(&makeRules, "make-rules", false, "Generate default rules YAML")
+	flag.BoolVar(&makeRules, "make-token-rules", false, "Generate default rules YAML")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
-	flag.StringVar(&rulesFile, "config", "", "YAML rules file (optional)")
+	flag.StringVar(&rulesFile, "token-rules", "", "YAML rules file (optional)")
 
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr, usage)

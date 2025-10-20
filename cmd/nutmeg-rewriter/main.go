@@ -34,7 +34,7 @@ func main() {
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
-	flag.StringVar(&configFile, "config", "", "YAML file containing rewrite rules")
+	flag.StringVar(&configFile, "rewrite-rules", "", "YAML file containing rewrite rules")
 	flag.StringVar(&format, "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
 	flag.StringVar(&format, "format", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
 	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
