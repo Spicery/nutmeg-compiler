@@ -1,4 +1,4 @@
-package main
+package rewriter
 
 const DefaultRewriteRules = `
 name: Default Rewrite

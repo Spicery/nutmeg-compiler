@@ -167,6 +167,21 @@ func main() {
 		}
 
 		tree, _ = r.Rewrite(tree)
+	} else {
+		// Use default rewrite rules.
+		rewriteConfig, err = rewriter.LoadRewriteConfigFromString(rewriter.DefaultRewriteRules)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading default rewrite rules: %v\n", err)
+			os.Exit(1)
+		}
+
+		r, err := rewriter.NewRewriter(rewriteConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating rewriter: %v\n", err)
+			os.Exit(1)
+		}
+
+		tree, _ = r.Rewrite(tree)
 	}
 
 	// Determine output format.

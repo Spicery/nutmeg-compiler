@@ -55,7 +55,7 @@ func main() {
 	}
 
 	if makeRules {
-		fmt.Print(DefaultRewriteRules)
+		fmt.Print(rewriter.DefaultRewriteRules)
 		os.Exit(0)
 	}
 
@@ -77,7 +77,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		rewriteConfig, err = rewriter.LoadRewriteConfigFromString(DefaultRewriteRules)
+		rewriteConfig, err = rewriter.LoadRewriteConfigFromString(rewriter.DefaultRewriteRules)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading default rewrite rules: %v\n", err)
 			os.Exit(1)
