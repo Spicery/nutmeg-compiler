@@ -1,0 +1,22 @@
+name: Negation Handling Rules
+description: Handle negation operators in expressions
+passes:
+  - name: Pass 1, handle negation operators
+    downwards:
+      - name: Rename negation as seq and toggle sign of number
+        match:
+          self:
+            name: operator
+            key: name
+            value: "-"
+            count: 1
+          child:
+            name: number
+        action:
+          sequence:
+          - replaceName:
+              with: seq
+          - childAction:
+              rotateOption:
+                key: sign
+                values: ["+", "-"]

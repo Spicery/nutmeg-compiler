@@ -125,6 +125,26 @@ passes:
               count: 2
         breakOnSuccess: true
 
+      - name: Apply
+        match:
+          self:
+            name: apply
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: Def
+        match:
+          self:
+            name: def
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
       - name: Fail Validation
         match:
           self:

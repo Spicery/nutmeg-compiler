@@ -3,10 +3,23 @@ description: Canonize switch forms
 passes:
   - name: Pass 1
     downwards:
-      - name: remove endcase
+      - name: Switch
         match:
           self:
             name: form
+          child:
+            name: part
+            key: keyword
+            value: switch
+            siblingPosition: 0
+        action:
+          replaceName:
+            with: switch
+
+      - name: remove endcase
+        match:
+          self:
+            name: switch
           child:
             name: part
             key: keyword
@@ -17,7 +30,7 @@ passes:
       - name: mark else part as default
         match:
           parent:
-            name: form
+            name: switch
           self:
             name: part
             key: keyword
@@ -29,7 +42,7 @@ passes:
       - name: mark case and then parts
         match:
           parent:
-            name: form
+            name: switch
           self:
             name: part
             key: keyword

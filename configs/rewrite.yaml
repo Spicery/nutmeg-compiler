@@ -1,10 +1,164 @@
-# A simple substitutions file for nutmeg-parser that shows the 
-# format.
-name: Simple Rewrite Example
-description: A simple example of rewriting a parse tree
+name: Default Rewrite
 passes:
 
-  - name: Pass 1, handle ifnot/elseifnot
+  - name: Pass 1
+    singlePass: true
+    downwards:
+
+      - name: (x.f)(y) -> f(x,y)
+        match:
+          self:
+            name: apply
+            count: 2
+          child:
+            name: operator
+            key: name
+            value: "."
+            count: 2
+            siblingPosition: 0
+          nextChild:
+            name: delimited
+            key: kind
+            value: parentheses
+        action:
+          sequence:
+            - replaceName: 
+                with: apply
+            - inlineChild: true
+            - permuteChildren: [0, 1]
+            - newNodeChild:
+                name: delimited
+                key: kind
+                value: parentheses
+                offset: 1
+                length: 2
+
+      - name: Rename negation as seq and toggle sign of number
+        match:
+          self:
+            name: operator
+            key: name
+            value: "-"
+            count: 1
+          child:
+            name: number
+        action:
+          sequence:
+          - replaceName:
+              with: seq
+          - childAction:
+              rotateOption:
+                key: sign
+                values: ["+", "-"]
+
+      - name: Operator to Syscall
+        match:
+          self:
+            name: operator
+            key: name
+            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
+            count: 2
+        action:
+          replaceName:
+            with: syscall
+
+      - name: Change ':=' to bind (POP)
+        match:
+          self:
+            name: operator
+            key: name
+            value: ":="
+            count: 2
+        action:
+          replaceName:
+            with: bind
+
+      - name: Change '<-' to assign (POP)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "<-"
+            count: 2
+        action:
+          replaceName:
+            with: assign
+
+      - name: Change '<--' to update (UCALL)
+        match:
+          self:
+            name: operator
+            key: name
+            value: "<--"
+            count: 2
+        action:
+          replaceName:
+            with: update
+
+      - name: Fuse let parts
+        match:
+          self:
+            name: form
+            count: 2
+          child:
+            name: part
+            key: keyword
+            value: let
+            siblingPosition: 0
+        action:
+          mergeChildWithNext: false
+
+      - name: Switch
+        match:
+          self:
+            name: form
+          child:
+            name: part
+            key: keyword
+            value: switch
+            siblingPosition: 0
+        action:
+          replaceName:
+            with: switch
+
+      - name: remove endcase
+        match:
+          self:
+            name: switch
+          child:
+            name: part
+            key: keyword
+            value: endcase
+        action:
+          removeChild: true
+
+      - name: mark else part as default
+        match:
+          parent:
+            name: switch
+          self:
+            name: part
+            key: keyword
+            value: else
+        action:
+          replaceName:
+            with: default
+
+      - name: mark case and then parts
+        match:
+          parent:
+            name: switch
+          self:
+            name: part
+            key: keyword
+            value.regexp: case|then
+        action:
+          replaceName:
+            src: self
+            from: value
+
+  - name: Pass 2, Conditional, handle ifnot/elseifnot
+    singlePass: true
     downwards:
 
       - name: part/if
@@ -98,7 +252,8 @@ passes:
             length: 3
         repeatOnSuccess: true
 
-  - name: Pass 2, introduce ifnot
+  - name: Pass 3, Conditional, introduce ifnot
+    singlePass: true
     downwards:
       - name: if-not
         match:
@@ -107,7 +262,7 @@ passes:
           child:
             name: part
             key: keyword
-            value: ifnot          
+            value: ifnot
             siblingPosition: 0
         action:
           replaceName:
@@ -120,15 +275,14 @@ passes:
           child:
             name: part
             key: keyword
-            value: elseifnot          
+            value: elseifnot
             siblingPosition: 0
         action:
           replaceName:
             with: ifnot
 
-  - name: Pass 3
+  - name: Pass 4, convert forms to seq
     downwards:
-
       - name: Rename form using keyword
         match:
           self:
@@ -160,119 +314,180 @@ passes:
           replaceName:
             with: seq
 
-      - name: Rename negation as seq and toggle sign of number
+    upwards:
+    - name: Inline nested sequences
+      match:
+        self:
+          name: seq
+        child:
+          name: seq
+      action:
+        inlineChild: true
+      repeatOnSuccess: true
+
+    - name: seq-1
+      match:
+        self:
+          name: seq
+          count: 1
+      action:
+        replaceByChild: 0
+      onSuccess: Inline nested sequences
+
+  - name: Pass 5, Validate
+    singlePass: true
+    downwards:
+      - name: number
         match:
           self:
-            name: operator
-            key: name
-            value: "-"
-            count: 1
-          child:
             name: number
         action:
-          sequence:
-          - replaceName:
-              with: seq
-          - childAction:
-              rotateOption:
-                key: sign
-                values: ["+", "-"]
+          continue: true
+        breakOnSuccess: true
 
-      - name: Change ':=' to bind (POP)
+      - name: string
         match:
           self:
-            name: operator
-            key: name
-            value: ":="
-            count: 2
+            name: string
         action:
-          replaceName:
-            with: bind
+          continue: true
+        breakOnSuccess: true
 
-      - name: Change '<-' to assign (POP)
+      - name: string
         match:
           self:
-            name: operator
-            key: name
-            value: "<-"
-            count: 2
+            name: id
         action:
-          replaceName:
-            with: assign
+          continue: true
+        breakOnSuccess: true
 
-      - name: Change '<--' to update (UCALL)
+      - name: Syscall
         match:
           self:
-            name: operator
-            key: name
-            value: "<--"
-            count: 2
+            name: syscall
         action:
-          replaceName:
-            with: update
+          continue: true
+        breakOnSuccess: true
 
-    upwards:
-      - name: Anotation Merge (Step 1a)
+      - name: If
+        match:
+          self:
+            name: if
+        action:
+          assert:
+            self:
+              count: 3
+        breakOnSuccess: true
+
+      - name: Switch
+        match:
+          self:
+            name: switch
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: Case
+        match:
+          self:
+            name: case
+        action:
+          assert:
+            parent:
+              name: switch
+        breakOnSuccess: true
+
+      - name: Else
+        match:
+          self:
+            name: else
+        action:
+          assert:
+            parent:
+              name: switch
+            self:
+              siblingPosition: -1
+        breakOnSuccess: true
+
+      - name: Seq
+        match:
+          self:
+            name: seq
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: Unit
         match:
           self:
             name: unit
-          child:
-            name: delimited
-            key: kind
-            value: brackets
-          nextChild:
-            name: delimited
-            key: kind
-            value: brackets
         action:
-            mergeChildWithNext: false
-        repeatOnSuccess: true
+          continue: true
+        breakOnSuccess: true
 
-      - name: Anotation Merge (Step 1b)
+      - name: for
         match:
           self:
-            name: unit
-          child:
-            name: delimited
-            key: kind
-            value: brackets
+            name: for
         action:
-          childAction:
-            replaceName:
-              with: seq
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
 
-      - name: Annotation (Step 2)
+      - name: bind
         match:
           self:
-            name: unit
-          child:
-            name: delimited
-            key: kind
-            value: brackets
-          nextChild:
+            name: bind
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: assign
+        match:
+          self:
+            name: assign
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: update
+        match:
+          self:
+            name: update
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: Apply
+        match:
+          self:
+            name: apply
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: Def
+        match:
+          self:
             name: def
         action:
-          newNodeChild:
-            name: annotation
-            lengfth: 2
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
 
-      - name: Inline nested sequences
+      - name: Fail Validation
         match:
           self:
-            name: seq
-          child:
-            name: seq
+            name.regexp: ".*"
         action:
-          inlineChild: true
-        repeatOnSuccess: true
-
-      - name: Elide sequence of length 1
-        match:
-          self:
-            name: seq
-            count: 1
-        action:
-          replaceByChild: 0
-        repeatOnSuccess: true
-
-
+          fail: "Validation failed"
