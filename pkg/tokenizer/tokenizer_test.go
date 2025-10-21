@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+
+	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 func TestBasicTokenisation(t *testing.T) {
@@ -68,7 +70,7 @@ func TestStringTokens(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != StringLiteralTokenType {
+			if token.Type != common.StringLiteralTokenType {
 				t.Errorf("Expected string token, got %s", token.Type)
 			}
 
@@ -170,7 +172,7 @@ func TestNumericTokens(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != NumericLiteralTokenType {
+			if token.Type != common.NumericLiteralTokenType {
 				t.Errorf("Expected numeric token, got %s", token.Type)
 			}
 
@@ -288,7 +290,7 @@ func TestEnhancedNumericEdgeCases(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != NumericLiteralTokenType {
+			if token.Type != common.NumericLiteralTokenType {
 				t.Errorf("Expected numeric token, got %s", token.Type)
 				return
 			}
@@ -390,7 +392,7 @@ func TestNumericWithUnderscores(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != NumericLiteralTokenType {
+			if token.Type != common.NumericLiteralTokenType {
 				t.Errorf("Expected numeric token, got %s", token.Type)
 			}
 
@@ -487,7 +489,7 @@ func TestBalancedTernaryTokens(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != NumericLiteralTokenType {
+			if token.Type != common.NumericLiteralTokenType {
 				t.Errorf("Expected numeric token, got %s", token.Type)
 			}
 
@@ -529,16 +531,16 @@ func TestBalancedTernaryTokens(t *testing.T) {
 func TestStartTokens(t *testing.T) {
 	tests := []struct {
 		input        string
-		expectedType TokenType
+		expectedType common.TokenType
 		expecting    []string
 	}{
-		{"def", StartTokenType, []string{"=>>"}},
-		{"if", StartTokenType, []string{"then"}},
-		{"class", StartTokenType, []string{}},
-		{"fn", StartTokenType, []string{"=>>"}},
-		{"for", StartTokenType, []string{"do"}},
-		{"try", StartTokenType, []string{"catch", "else"}},
-		{"transaction", StartTokenType, []string{"catch", "else"}},
+		{"def", common.StartTokenType, []string{"=>>"}},
+		{"if", common.StartTokenType, []string{"then"}},
+		{"class", common.StartTokenType, []string{}},
+		{"fn", common.StartTokenType, []string{"=>>"}},
+		{"for", common.StartTokenType, []string{"do"}},
+		{"try", common.StartTokenType, []string{"catch", "else"}},
+		{"transaction", common.StartTokenType, []string{"catch", "else"}},
 	}
 
 	for _, tt := range tests {
@@ -602,7 +604,7 @@ func TestOperatorTokens(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != OperatorTokenType {
+			if token.Type != common.OperatorTokenType {
 				t.Errorf("Expected operator token, got %s", token.Type)
 			}
 
@@ -621,17 +623,17 @@ func TestOperatorTokens(t *testing.T) {
 func TestDelimiterTokens(t *testing.T) {
 	tests := []struct {
 		input        string
-		expectedType TokenType
+		expectedType common.TokenType
 		closedBy     []string
 		infixPrec    int
 		isPrefix     bool
 	}{
-		{"(", OpenDelimiterTokenType, []string{")"}, 2020, true},
-		{"[", OpenDelimiterTokenType, []string{"]"}, 2030, true},
-		{"{", OpenDelimiterTokenType, []string{"}"}, 2040, true}, // Updated: now supports infix usage for f{x} syntax
-		{")", CloseDelimiterTokenType, nil, 0, false},
-		{"]", CloseDelimiterTokenType, nil, 0, false},
-		{"}", CloseDelimiterTokenType, nil, 0, false},
+		{"(", common.OpenDelimiterTokenType, []string{")"}, 2020, true},
+		{"[", common.OpenDelimiterTokenType, []string{"]"}, 2030, true},
+		{"{", common.OpenDelimiterTokenType, []string{"}"}, 2040, true}, // Updated: now supports infix usage for f{x} syntax
+		{")", common.CloseDelimiterTokenType, nil, 0, false},
+		{"]", common.CloseDelimiterTokenType, nil, 0, false},
+		{"}", common.CloseDelimiterTokenType, nil, 0, false},
 	}
 
 	for _, tt := range tests {
@@ -654,7 +656,7 @@ func TestDelimiterTokens(t *testing.T) {
 				t.Errorf("Expected token type %s, got %s", tt.expectedType, token.Type)
 			}
 
-			if tt.expectedType == OpenDelimiterTokenType {
+			if tt.expectedType == common.OpenDelimiterTokenType {
 				if len(token.ClosedBy) != len(tt.closedBy) {
 					t.Errorf("Expected closed by %v, got %v", tt.closedBy, token.ClosedBy)
 				} else {
@@ -680,34 +682,34 @@ func TestDelimiterTokens(t *testing.T) {
 func TestKeywordClassification(t *testing.T) {
 	tests := []struct {
 		input        string
-		expectedType TokenType
+		expectedType common.TokenType
 	}{
 		// Bridge tokens (L)
-		{"=>>", BridgeTokenType},
-		{"do", BridgeTokenType},
-		{"then", BridgeTokenType},
-		{"else", BridgeTokenType},
+		{"=>>", common.BridgeTokenType},
+		{"do", common.BridgeTokenType},
+		{"then", common.BridgeTokenType},
+		{"else", common.BridgeTokenType},
 
 		// Unclassified tokens (U)
-		{":", UnclassifiedTokenType}, // bare wildcard without context
+		{":", common.UnclassifiedTokenType}, // bare wildcard without context
 
 		// Compound tokens (C)
-		{"catch", BridgeTokenType},
-		{"elseif", BridgeTokenType},
-		{"elseifnot", BridgeTokenType},
+		{"catch", common.BridgeTokenType},
+		{"elseif", common.BridgeTokenType},
+		{"elseifnot", common.BridgeTokenType},
 
 		// Prefix tokens (P)
-		{"return", PrefixTokenType},
-		{"yield", PrefixTokenType},
+		{"return", common.PrefixTokenType},
+		{"yield", common.PrefixTokenType},
 
 		// End tokens (E)
-		{"end", EndTokenType},
-		{"enddef", EndTokenType},
-		{"endclass", EndTokenType},
+		{"end", common.EndTokenType},
+		{"enddef", common.EndTokenType},
+		{"endclass", common.EndTokenType},
 
 		// Variable tokens (V) - should default to this for unknown identifiers
-		{"myVariable", VariableTokenType},
-		{"unknown", VariableTokenType},
+		{"myVariable", common.VariableTokenType},
+		{"unknown", common.VariableTokenType},
 	}
 
 	for _, tt := range tests {
@@ -752,14 +754,12 @@ func TestJSONSerialization(t *testing.T) {
 		}
 
 		// Test that the JSON can be deserialized back
-		var deserializedToken Token
+		var deserializedToken common.Token
 		err = json.Unmarshal(jsonBytes, &deserializedToken)
 		if err != nil {
 			t.Errorf("Failed to deserialize token %d from JSON: %v", i, err)
 			continue
-		}
-
-		// Basic checks
+		} // Basic checks
 		if deserializedToken.Text != token.Text {
 			t.Errorf("Token %d text mismatch after JSON round-trip: expected '%s', got '%s'", i, token.Text, deserializedToken.Text)
 		}
@@ -823,7 +823,7 @@ func TestCustomRulesWildcard(t *testing.T) {
 		t.Errorf("Expected wildcard token text to be '***', got '%s'", wildcardToken.Text)
 	}
 
-	if wildcardToken.Type != BridgeTokenType {
+	if wildcardToken.Type != common.BridgeTokenType {
 		t.Errorf("Expected wildcard token type to be Bridge, got %s", wildcardToken.Type)
 	}
 
@@ -919,7 +919,7 @@ func TestExceptionTokens(t *testing.T) {
 			}
 
 			token := tokens[0]
-			if token.Type != ExceptionTokenType {
+			if token.Type != common.ExceptionTokenType {
 				t.Errorf("Expected exception token, got %s", token.Type)
 			}
 		})

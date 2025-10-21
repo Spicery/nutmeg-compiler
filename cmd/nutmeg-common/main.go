@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -15,24 +14,6 @@ import (
 
 // Version is injected at build time via ldflags.
 var Version = "dev"
-
-// Convert tokenizer.Token to parser.Token via JSON marshaling/unmarshaling.
-func convertTokens(tokenizerTokens []*tokenizer.Token) ([]*parser.Token, error) {
-	parserTokens := make([]*parser.Token, len(tokenizerTokens))
-	for i, tokToken := range tokenizerTokens {
-		// Marshal to JSON and unmarshal to parser.Token.
-		jsonData, err := json.Marshal(tokToken)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal tokenizer token: %w", err)
-		}
-		var parsToken parser.Token
-		if err := json.Unmarshal(jsonData, &parsToken); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal to parser token: %w", err)
-		}
-		parserTokens[i] = &parsToken
-	}
-	return parserTokens, nil
-}
 
 const usage = `nutmeg-common - integrated tokenizer, parser, and rewriter for Nutmeg
 
@@ -134,15 +115,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Convert tokenizer tokens to parser tokens.
-	parserTokens, err := convertTokens(tokens)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Token conversion error: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Phase 2: Parsing - use the tokens directly without a temporary file.
-	p := parser.NewParserFromTokens(parserTokens, true)
+	// Phase 2: Parsing - use the tokens directly without conversion.
+	p := parser.NewParserFromTokens(tokens, true)
 
 	tree := &common.Node{
 		Name:     "unit",

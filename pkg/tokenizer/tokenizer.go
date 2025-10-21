@@ -11,6 +11,13 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
+// Position represents a line and column position in the source file.
+// This is used internally by the tokenizer for tracking positions.
+type Position struct {
+	Line int
+	Col  int
+}
+
 // Tokenizer represents the main tokenizer structure.
 type Tokenizer struct {
 	input          string
@@ -20,7 +27,7 @@ type Tokenizer struct {
 	markStack      []int // Stack of position markers
 	lineNoStack    []int // Array to store line numbers for each token
 	lineColStack   []int // Array to store column numbers for each token
-	tokens         []*Token
+	tokens         []*common.Token
 	expectingStack [][]string      // Stack of expecting arrays for context tracking
 	rules          *TokenizerRules // Custom rules for this tokenizer instance
 }
@@ -38,14 +45,14 @@ var (
 type StartTokenData struct {
 	Expecting []string
 	ClosedBy  []string
-	Arity     Arity
+	Arity     common.Arity
 }
 
 // Bridge tokens (B) with their attributes
 type BridgeTokenData struct {
 	Expecting []string
 	In        []string
-	Arity     Arity
+	Arity     common.Arity
 }
 
 // Base precedence values for operator characters (from operators.md)
@@ -83,7 +90,7 @@ func NewTokenizerWithRules(input string, rules *TokenizerRules) *Tokenizer {
 		input:          input,
 		line:           1,
 		column:         1,
-		tokens:         make([]*Token, 0),
+		tokens:         make([]*common.Token, 0),
 		expectingStack: make([][]string, 0),
 		rules:          rules,
 	}
@@ -118,12 +125,12 @@ func (t *Tokenizer) getCurrentlyExpected() []string {
 }
 
 // addTokenAndManageStack adds a token to the tokens slice and manages the expecting stack.
-func (t *Tokenizer) addTokenAndManageStack(token *Token) error {
+func (t *Tokenizer) addTokenAndManageStack(token *common.Token) error {
 	// Check if numeric token is valid before adding it
-	if token.Type == NumericLiteralTokenType {
-		if valid, reason := token.isValidNumber(); !valid {
+	if token.Type == common.NumericLiteralTokenType {
+		if valid, reason := token.IsValidNumber(); !valid {
 			// Replace the token with an exception token
-			exceptionToken := NewExceptionToken(token.Text, "invalid numeric literal: "+reason, token.Span)
+			exceptionToken := common.NewExceptionToken(token.Text, "invalid numeric literal: "+reason, token.Span)
 			t.tokens = append(t.tokens, exceptionToken)
 			return fmt.Errorf("tokenisation error at line %d, column %d: %s",
 				exceptionToken.Span.StartLine, exceptionToken.Span.StartColumn, *exceptionToken.Reason)
@@ -145,22 +152,22 @@ func (t *Tokenizer) addTokenAndManageStack(token *Token) error {
 	t.tokens = append(t.tokens, token)
 
 	// If this is an exception token, stop processing
-	if token.Type == ExceptionTokenType {
+	if token.Type == common.ExceptionTokenType {
 		return fmt.Errorf("tokenisation error at line %d, column %d: %s",
 			token.Span.StartLine, token.Span.StartColumn, *token.Reason)
 	}
 
 	// Manage the expecting stack based on token type and text
 	switch token.Type {
-	case StartTokenType:
+	case common.StartTokenType:
 		// Push expected tokens for this start token
 		if len(token.Expecting) > 0 {
 			t.pushExpecting(token.Expecting)
 		}
-	case EndTokenType:
+	case common.EndTokenType:
 		// Pop the expecting stack
 		t.popExpecting()
-	case BridgeTokenType:
+	case common.BridgeTokenType:
 		// Update expecting for bridge tokens based on their attributes
 		if token.Expecting != nil {
 			// If the token has explicit expecting, replace current expectations
@@ -170,8 +177,8 @@ func (t *Tokenizer) addTokenAndManageStack(token *Token) error {
 	return nil
 }
 
-// Tokenize processes the input and returns a slice of tokens.
-func (t *Tokenizer) Tokenize() ([]*Token, error) {
+// Tokenize processes the input and returns the list of tokens.
+func (t *Tokenizer) Tokenize() ([]*common.Token, error) {
 	for t.position < len(t.input) {
 		if err := t.nextToken(); err != nil {
 			return t.tokens, err
@@ -232,7 +239,7 @@ func (t *Tokenizer) nextToken() error {
 	end := Position{Line: t.line, Col: t.column + size}
 	span := common.Span{StartLine: start.Line, StartColumn: start.Col, EndLine: end.Line, EndColumn: end.Col}
 
-	token := NewToken(text, UnclassifiedTokenType, span)
+	token := common.NewToken(text, common.UnclassifiedTokenType, span)
 	if sawNewlineBefore {
 		token.LnBefore = &sawNewlineBefore
 	}
@@ -271,7 +278,7 @@ func (t *Tokenizer) skipWhitespaceAndComments() bool {
 }
 
 // matchNumeric attempts to match a numeric literal.
-func (t *Tokenizer) matchNumeric() *Token {
+func (t *Tokenizer) matchNumeric() *common.Token {
 	// First try to match radix-based numbers (must check before decimal)
 	if radixMatch := radixRegex.FindStringSubmatch(t.input[t.position:]); radixMatch != nil {
 		return t.parseRadixNumber(radixMatch)
@@ -286,7 +293,7 @@ func (t *Tokenizer) matchNumeric() *Token {
 }
 
 // parseRadixNumber parses a number with radix notation (e.g., 0x, 0o, 0b, 0t, or nr).
-func (t *Tokenizer) parseRadixNumber(match []string) *Token {
+func (t *Tokenizer) parseRadixNumber(match []string) *common.Token {
 	fullMatch := match[0]
 	radixPart := match[1]
 	mantissa := match[2]
@@ -349,7 +356,7 @@ func (t *Tokenizer) parseRadixNumber(match []string) *Token {
 					return t.createExceptionToken(fullMatch, fmt.Sprintf("invalid literal: %s", exponent))
 				}
 			}
-			return NewBalancedTernaryToken(fullMatch, mantissa, fraction, exponentVal, span)
+			return common.NewBalancedTernaryToken(fullMatch, mantissa, fraction, exponentVal, span)
 		} else {
 			// Invalid ternary format - should be 0t
 			return t.createExceptionToken(fullMatch, "invalid literal")
@@ -394,11 +401,11 @@ func (t *Tokenizer) parseRadixNumber(match []string) *Token {
 			return t.createExceptionToken(fullMatch, "invalid literal")
 		}
 	}
-	return NewNumericToken(fullMatch, radixPrefix, base, mantissa, fraction, exponentVal, span)
+	return common.NewNumericToken(fullMatch, radixPrefix, base, mantissa, fraction, exponentVal, span)
 }
 
 // parseDecimalNumber parses a decimal number.
-func (t *Tokenizer) parseDecimalNumber(match []string) *Token {
+func (t *Tokenizer) parseDecimalNumber(match []string) *common.Token {
 	fullMatch := match[0]
 	mantissa := match[1]
 	fraction := ""
@@ -428,19 +435,19 @@ func (t *Tokenizer) parseDecimalNumber(match []string) *Token {
 			return t.createExceptionToken(fullMatch, fmt.Sprintf("invalid literal: %s", err))
 		}
 	}
-	return NewNumericToken(fullMatch, "", 10, mantissa, fraction, exponentVal, span)
+	return common.NewNumericToken(fullMatch, "", 10, mantissa, fraction, exponentVal, span)
 }
 
 // createExceptionToken creates an exception token for invalid numeric formats.
-func (t *Tokenizer) createExceptionToken(text, reason string) *Token {
+func (t *Tokenizer) createExceptionToken(text, reason string) *common.Token {
 	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column + len(text)}
 	t.advance(len(text))
-	return NewExceptionToken(text, reason, span)
+	return common.NewExceptionToken(text, reason, span)
 }
 
 // matchCustomRules checks for any custom rules that match at the current position.
 // Custom rules take precedence over default rules.
-func (t *Tokenizer) matchCustomRules() *Token {
+func (t *Tokenizer) matchCustomRules() *common.Token {
 	if t.rules == nil || t.rules.TokenLookup == nil {
 		return nil // No custom rules
 	}
@@ -461,7 +468,7 @@ func (t *Tokenizer) matchCustomRules() *Token {
 
 			// If it's an identifier and no special type, treat as VariableToken
 			t.advance(len(text))
-			return NewToken(text, VariableTokenType, span)
+			return common.NewToken(text, common.VariableTokenType, span)
 		}
 		return nil // No matching custom rule
 	}
@@ -479,40 +486,40 @@ func (t *Tokenizer) matchCustomRules() *Token {
 			if bridgeData, exists := t.rules.BridgeTokens[expectedText]; exists {
 				// Create a wildcard token that copies attributes from the expected bridge
 				t.advance(len(text))
-				return NewWildcardBridgeToken(text, expectedText, bridgeData.Expecting, bridgeData.In, bridgeData.Arity, span)
+				return common.NewWildcardBridgeToken(text, expectedText, bridgeData.Expecting, bridgeData.In, bridgeData.Arity, span)
 			}
 		}
 
 		// No context available, create unclassified token
 		t.advance(len(text))
-		return NewToken(text, UnclassifiedTokenType, span)
+		return common.NewToken(text, common.UnclassifiedTokenType, span)
 
 	case CustomStart:
 		startData := entry.Data.(StartTokenData)
 		t.advance(len(text))
-		return NewStartToken(text, startData.Expecting, startData.ClosedBy, span, startData.Arity)
+		return common.NewStartToken(text, startData.Expecting, startData.ClosedBy, span, startData.Arity)
 
 	case CustomEnd:
 		t.advance(len(text))
-		return NewToken(text, EndTokenType, span)
+		return common.NewToken(text, common.EndTokenType, span)
 
 	case CustomBridge:
 		bridgeData := entry.Data.(BridgeTokenData)
 		t.advance(len(text))
-		return NewStmntBridgeToken(text, bridgeData.Expecting, bridgeData.In, span)
+		return common.NewStmntBridgeToken(text, bridgeData.Expecting, bridgeData.In, span)
 
 	case CustomPrefix:
 		t.advance(len(text))
-		return NewToken(text, PrefixTokenType, span)
+		return common.NewToken(text, common.PrefixTokenType, span)
 
 	case CustomMark:
 		t.advance(len(text))
-		return NewToken(text, MarkTokenType, span)
+		return common.NewToken(text, common.MarkTokenType, span)
 
 	case CustomOperator:
 		precedence := entry.Data.([3]int)
 		t.advance(len(text))
-		return NewOperatorToken(text, precedence[0], precedence[1], precedence[2], span)
+		return common.NewOperatorToken(text, precedence[0], precedence[1], precedence[2], span)
 
 	case CustomOpenDelimiter:
 		delimiterData := entry.Data.(struct {
@@ -521,11 +528,11 @@ func (t *Tokenizer) matchCustomRules() *Token {
 			IsPrefix  bool
 		})
 		t.advance(len(text))
-		return NewDelimiterToken(text, delimiterData.ClosedBy, delimiterData.InfixPrec, delimiterData.IsPrefix, span)
+		return common.NewDelimiterToken(text, delimiterData.ClosedBy, delimiterData.InfixPrec, delimiterData.IsPrefix, span)
 
 	case CustomCloseDelimiter:
 		t.advance(len(text))
-		return NewToken(text, CloseDelimiterTokenType, span)
+		return common.NewToken(text, common.CloseDelimiterTokenType, span)
 	}
 
 	return nil

@@ -1,10 +1,6 @@
-package tokenizer
+package common
 
-import (
-	"strings"
-
-	"github.com/spicery/nutmeg-compiler/pkg/common"
-)
+import "strings"
 
 // TokenType represents the different types of tokens.
 type TokenType string
@@ -13,14 +9,14 @@ const (
 	// Literal constants
 	NumericLiteralTokenType     TokenType = "n" // Numeric literals with radix support
 	StringLiteralTokenType      TokenType = "s" // String literals with quotes and escapes
-	MultiLineStringTokenType    TokenType = "m" // String literals with quotes and escapes
+	MultiLineStringTokenType    TokenType = "m" // Multi-line string literals
 	InterpolatedStringTokenType TokenType = "i" // Interpolated string literals e.g. `Hello, \(name)!`
 	ExpressionTokenType         TokenType = "e" // Expression tokens (e.g., (1 + 2))
 
 	// Identifier tokens
 	StartTokenType    TokenType = "S" // Form start tokens (def, if, while)
 	EndTokenType      TokenType = "E" // Form end tokens (end, endif, endwhile)
-	BridgeTokenType   TokenType = "B" // Bridge tokens (=>, =>, else, catch)
+	BridgeTokenType   TokenType = "B" // Bridge tokens (=>, else, catch)
 	PrefixTokenType   TokenType = "P" // Prefix operators (return, yield)
 	VariableTokenType TokenType = "V" // Variable identifiers
 
@@ -33,12 +29,6 @@ const (
 	ExceptionTokenType      TokenType = "X" // Exception tokens for invalid constructs
 )
 
-// Position represents a line and column position in the source file.
-type Position struct {
-	Line int `json:"line"`
-	Col  int `json:"col"`
-}
-
 type Arity int
 
 const (
@@ -48,12 +38,13 @@ const (
 )
 
 // Token represents a single token from the Nutmeg source code.
+// This is the canonical token type used throughout the compiler pipeline.
 type Token struct {
 	// Common fields for all tokens
-	Text  string      `json:"text"`
-	Span  common.Span `json:"span"`
-	Type  TokenType   `json:"type"`
-	Alias *string     `json:"alias,omitempty"` // The node alias, if any
+	Text  string    `json:"text"`
+	Span  Span      `json:"span"`
+	Type  TokenType `json:"type"`
+	Alias *string   `json:"alias,omitempty"` // The node alias, if any
 
 	// String token fields
 	Quote     string   `json:"quote,omitempty"`
@@ -90,6 +81,7 @@ type Token struct {
 	LnAfter  *bool `json:"ln_after,omitempty"`  // True if token was followed by a newline
 }
 
+// SetQuote sets the quote type for a string token.
 func (t *Token) SetQuote(r rune) {
 	switch r {
 	case '\'':
@@ -104,7 +96,7 @@ func (t *Token) SetQuote(r rune) {
 }
 
 // NewToken creates a new token with the basic required fields.
-func NewToken(text string, tokenType TokenType, span common.Span) *Token {
+func NewToken(text string, tokenType TokenType, span Span) *Token {
 	return &Token{
 		Text: text,
 		Type: tokenType,
@@ -113,7 +105,7 @@ func NewToken(text string, tokenType TokenType, span common.Span) *Token {
 }
 
 // NewStringToken creates a new string token with interpreted value.
-func NewStringToken(text, value string, span common.Span) *Token {
+func NewStringToken(text, value string, span Span) *Token {
 	return &Token{
 		Text:  text,
 		Type:  StringLiteralTokenType,
@@ -122,7 +114,8 @@ func NewStringToken(text, value string, span common.Span) *Token {
 	}
 }
 
-func NewMultiLineStringToken(text, value string, span common.Span) *Token {
+// NewMultiLineStringToken creates a new multi-line string token.
+func NewMultiLineStringToken(text, value string, span Span) *Token {
 	return &Token{
 		Text:  text,
 		Type:  MultiLineStringTokenType,
@@ -131,7 +124,8 @@ func NewMultiLineStringToken(text, value string, span common.Span) *Token {
 	}
 }
 
-func NewInterpolatedStringToken(text string, subtokens []*Token, span common.Span) *Token {
+// NewInterpolatedStringToken creates a new interpolated string token.
+func NewInterpolatedStringToken(text string, subtokens []*Token, span Span) *Token {
 	return &Token{
 		Text:      text,
 		Type:      StringLiteralTokenType,
@@ -140,7 +134,8 @@ func NewInterpolatedStringToken(text string, subtokens []*Token, span common.Spa
 	}
 }
 
-func NewExpressionToken(text string, span common.Span) *Token {
+// NewExpressionToken creates a new expression token.
+func NewExpressionToken(text string, span Span) *Token {
 	return &Token{
 		Text:  text,
 		Type:  ExpressionTokenType,
@@ -150,7 +145,7 @@ func NewExpressionToken(text string, span common.Span) *Token {
 }
 
 // NewNumericToken creates a new numeric token with radix and components.
-func NewNumericToken(text string, radix string, base int, mantissa, fraction string, exponent int, span common.Span) *Token {
+func NewNumericToken(text string, radix string, base int, mantissa, fraction string, exponent int, span Span) *Token {
 	token := &Token{
 		Text:     text,
 		Type:     NumericLiteralTokenType,
@@ -171,7 +166,7 @@ func NewNumericToken(text string, radix string, base int, mantissa, fraction str
 }
 
 // NewBalancedTernaryToken creates a new balanced ternary numeric token.
-func NewBalancedTernaryToken(text string, mantissa, fraction string, exponent int, span common.Span) *Token {
+func NewBalancedTernaryToken(text string, mantissa, fraction string, exponent int, span Span) *Token {
 	radixPrefix := "0t"
 	base := 3
 	balanced := true
@@ -196,7 +191,7 @@ func NewBalancedTernaryToken(text string, mantissa, fraction string, exponent in
 }
 
 // NewStartToken creates a new start token with expecting and closed_by tokens.
-func NewStartToken(text string, expecting, closedBy []string, span common.Span, arity Arity) *Token {
+func NewStartToken(text string, expecting, closedBy []string, span Span, arity Arity) *Token {
 	return &Token{
 		Text:      text,
 		Type:      StartTokenType,
@@ -208,14 +203,14 @@ func NewStartToken(text string, expecting, closedBy []string, span common.Span, 
 }
 
 // NewOperatorToken creates a new operator token with precedence values.
-func NewOperatorToken(text string, prefix, infix, postfix int, span common.Span) *Token {
+func NewOperatorToken(text string, prefix, infix, postfix int, span Span) *Token {
 	token := &Token{
 		Text: text,
 		Type: OperatorTokenType,
 		Span: span,
 	}
 
-	// Only set precedence if at least one value is non-zero
+	// Only set precedence if at least one value is non-zero.
 	if prefix > 0 || infix > 0 || postfix > 0 {
 		precedence := [3]int{prefix, infix, postfix}
 		token.Precedence = &precedence
@@ -225,7 +220,7 @@ func NewOperatorToken(text string, prefix, infix, postfix int, span common.Span)
 }
 
 // NewDelimiterToken creates a new open delimiter token.
-func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix bool, span common.Span) *Token {
+func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix bool, span Span) *Token {
 	return &Token{
 		Text:            text,
 		Type:            OpenDelimiterTokenType,
@@ -237,16 +232,17 @@ func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix boo
 }
 
 // NewStmntBridgeToken creates a new bridge token with expecting and in attributes.
-func NewStmntBridgeToken(text string, expecting, in []string, span common.Span) *Token {
+func NewStmntBridgeToken(text string, expecting, in []string, span Span) *Token {
 	return NewBridgeToken(text, expecting, in, Many, span)
 }
 
 // NewExprBridgeToken creates a new compound token with expecting and in attributes.
-func NewExprBridgeToken(text string, expecting, in []string, span common.Span) *Token {
+func NewExprBridgeToken(text string, expecting, in []string, span Span) *Token {
 	return NewBridgeToken(text, expecting, in, One, span)
 }
 
-func NewBridgeToken(text string, expecting, in []string, arity Arity, span common.Span) *Token {
+// NewBridgeToken creates a new bridge token with expecting and in attributes and arity.
+func NewBridgeToken(text string, expecting, in []string, arity Arity, span Span) *Token {
 	return &Token{
 		Text:      text,
 		Type:      BridgeTokenType,
@@ -258,7 +254,7 @@ func NewBridgeToken(text string, expecting, in []string, arity Arity, span commo
 }
 
 // NewWildcardBridgeToken creates a wildcard bridge token with copied attributes.
-func NewWildcardBridgeToken(text, expectedText string, expecting, in []string, arity Arity, span common.Span) *Token {
+func NewWildcardBridgeToken(text, expectedText string, expecting, in []string, arity Arity, span Span) *Token {
 	return &Token{
 		Text:      text,
 		Type:      BridgeTokenType,
@@ -270,7 +266,8 @@ func NewWildcardBridgeToken(text, expectedText string, expecting, in []string, a
 	}
 }
 
-func NewUnclassifiedToken(text string, span common.Span) *Token {
+// NewUnclassifiedToken creates a new unclassified token.
+func NewUnclassifiedToken(text string, span Span) *Token {
 	return &Token{
 		Text: text,
 		Type: UnclassifiedTokenType,
@@ -279,7 +276,7 @@ func NewUnclassifiedToken(text string, span common.Span) *Token {
 }
 
 // NewExceptionToken creates a new exception token with an error reason.
-func NewExceptionToken(text, reason string, span common.Span) *Token {
+func NewExceptionToken(text, reason string, span Span) *Token {
 	return &Token{
 		Text:   text,
 		Type:   ExceptionTokenType,
@@ -288,10 +285,10 @@ func NewExceptionToken(text, reason string, span common.Span) *Token {
 	}
 }
 
-// isValidNumber checks if a numeric token represents a valid number.
-func (t *Token) isValidNumber() (bool, string) {
+// IsValidNumber checks if a numeric token represents a valid number.
+func (t *Token) IsValidNumber() (bool, string) {
 	if t.Type != NumericLiteralTokenType {
-		return true, "" // Non-numeric tokens are always valid
+		return true, "" // Non-numeric tokens are always valid.
 	}
 
 	if t.Base == nil || t.Mantissa == nil {
@@ -302,10 +299,10 @@ func (t *Token) isValidNumber() (bool, string) {
 	mantissa := *t.Mantissa
 	isBalanced := t.Balanced != nil && *t.Balanced
 
-	// Check prefix validity for x/o/b/t notation
+	// Check prefix validity for x/o/b/t notation.
 	text := t.Text
 	if strings.Contains(text, "x") || strings.Contains(text, "o") || strings.Contains(text, "b") || strings.Contains(text, "t") {
-		// Find the prefix character
+		// Find the prefix character.
 		var prefixIndex int
 		var found bool
 		for _, chars := range []string{"x", "o", "b", "t"} {
@@ -323,12 +320,12 @@ func (t *Token) isValidNumber() (bool, string) {
 		}
 	}
 
-	// Validate mantissa digits
+	// Validate mantissa digits.
 	if !isValidDigitsForRadix(mantissa, base, isBalanced) {
 		return false, "invalid literal"
 	}
 
-	// Validate fraction digits if present
+	// Validate fraction digits if present.
 	if t.Fraction != nil && *t.Fraction != "" {
 		if !isValidDigitsForRadix(*t.Fraction, base, isBalanced) {
 			return false, "invalid literal"
@@ -341,7 +338,7 @@ func (t *Token) isValidNumber() (bool, string) {
 // isValidDigitsForRadix checks if all characters in a string are valid digits for the given radix.
 func isValidDigitsForRadix(digits string, radix int, allowBalancedTernary bool) bool {
 	for _, char := range digits {
-		// Skip underscores - they're allowed as separators
+		// Skip underscores - they're allowed as separators.
 		if char == '_' {
 			continue
 		}
@@ -354,20 +351,90 @@ func isValidDigitsForRadix(digits string, radix int, allowBalancedTernary bool) 
 
 // isValidDigitForRadix checks if a character is a valid digit for the given radix.
 func isValidDigitForRadix(char rune, radix int, allowBalancedTernary bool) bool {
-	// Handle balanced ternary special case
+	// Handle balanced ternary special case.
 	if allowBalancedTernary && radix == 3 && char == 'T' {
 		return true
 	}
 
-	// Handle numeric digits 0-9
+	// Handle numeric digits 0-9.
 	if char >= '0' && char <= '9' {
 		return int(char-'0') < radix
 	}
 
-	// Handle alphabetic digits A-Z (for radix > 10)
+	// Handle alphabetic digits A-Z (for radix > 10).
 	if char >= 'A' && char <= 'Z' {
 		return int(char-'A'+10) < radix
 	}
 
 	return false
+}
+
+// ToKind returns a string representing the kind of delimiter token.
+func (t *Token) ToKind() string {
+	switch t.Text {
+	case "[", "]":
+		return "brackets"
+	case "{", "}":
+		return "braces"
+	case "(", ")":
+		return "parentheses"
+	default:
+		return t.Text
+	}
+}
+
+// ToSeparator returns a string representing the kind of separator token.
+func (t *Token) ToSeparator() string {
+	switch t.Text {
+	case ",":
+		return "comma"
+	case ";":
+		return "semicolon"
+	default:
+		return "unknown"
+	}
+}
+
+// InfixPrec returns the infix precedence of the token.
+func (t *Token) InfixPrec() int {
+	if t.InfixPrecedence != nil {
+		return *t.InfixPrecedence
+	}
+	if t.Precedence != nil {
+		return t.Precedence[1]
+	}
+	return 0
+}
+
+// PrefixPrec returns the prefix precedence of the token.
+func (t *Token) PrefixPrec() int {
+	if t.Precedence != nil {
+		return t.Precedence[0]
+	}
+	return 0
+}
+
+// PostfixPrec returns the postfix precedence of the token.
+func (t *Token) PostfixPrec() int {
+	if t.Precedence != nil {
+		return t.Precedence[2]
+	}
+	return 0
+}
+
+// ExpectingMessage returns a formatted string of expected tokens, excluding the specified one.
+func (t *Token) ExpectingMessage(excluding string) string {
+	message := strings.Builder{}
+	if len(t.Expecting) > 0 {
+		for i, x := range t.Expecting {
+			if x == excluding {
+				continue
+			}
+			if i > 0 {
+				message.WriteString("/")
+			}
+			message.WriteString(x)
+		}
+	}
+	return message.String()
 }

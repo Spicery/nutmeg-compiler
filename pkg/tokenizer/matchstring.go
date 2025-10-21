@@ -12,7 +12,7 @@ import (
 )
 
 // matchString attempts to match a string literal.
-func (t *Tokenizer) matchString() (*Token, error) {
+func (t *Tokenizer) matchString() (*common.Token, error) {
 	if t.position >= len(t.input) {
 		return nil, nil
 	}
@@ -32,7 +32,7 @@ func (t *Tokenizer) matchString() (*Token, error) {
 	return t.readString(false, r)
 }
 
-func (t *Tokenizer) matchRawString() (*Token, error) {
+func (t *Tokenizer) matchRawString() (*common.Token, error) {
 	t.consume() // Consume the '@'
 	tagText := ""
 	r, ok := t.peek()
@@ -42,7 +42,7 @@ func (t *Tokenizer) matchRawString() (*Token, error) {
 	r, ok = t.peek()
 	if ok && isOpeningQuoteChar(r) {
 		_, is_triple := t.tryPeekTripleOpeningQuotes()
-		var token *Token
+		var token *common.Token
 		var terr error
 		if is_triple {
 			token, terr = t.readMultilineString(true)
@@ -80,7 +80,7 @@ func (t *Tokenizer) takeTagText() string {
 	return text.String()
 }
 
-func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error) {
+func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*common.Token, error) {
 	start_position := t.position
 	startLine, startCol := t.line, t.column
 	currPosition := t.position
@@ -90,7 +90,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 		quote = getMatchingCloseQuote(t.consume()) // Consume the opening quote
 	}
 	var value strings.Builder
-	var interpolationTokens []*Token
+	var interpolationTokens []*common.Token
 
 	for {
 		if !t.hasMoreInput() {
@@ -110,7 +110,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 					currSpan.EndLine = beforeBackSlash.Line
 					currSpan.EndColumn = beforeBackSlash.Col
 					valueString := value.String()
-					current := NewStringToken(textString, valueString, currSpan)
+					current := common.NewStringToken(textString, valueString, currSpan)
 					current.SetQuote(quote)
 					interpolationTokens = append(interpolationTokens, current)
 					value.Reset()
@@ -142,7 +142,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 	if value.Len() > 0 {
 		textString := t.input[currPosition:t.position]
 		currSpan.EndLine, currSpan.EndColumn = t.line, t.column
-		token := NewStringToken(textString, value.String(), currSpan)
+		token := common.NewStringToken(textString, value.String(), currSpan)
 		token.SetQuote(quote)
 		interpolationTokens = append(interpolationTokens, token)
 	}
@@ -152,15 +152,15 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 	text := t.input[start_position:end_position]
 
 	// Is this just a literal string?
-	if len(interpolationTokens) == 1 && interpolationTokens[0].Type == StringLiteralTokenType {
+	if len(interpolationTokens) == 1 && interpolationTokens[0].Type == common.StringLiteralTokenType {
 		interpolationTokens[0].Text = text
 		return interpolationTokens[0], nil
 	}
 
 	// Combine into a StringInterpolationToken if interpolation occurred
-	compoundToken := NewInterpolatedStringToken(text, interpolationTokens, common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
+	compoundToken := common.NewInterpolatedStringToken(text, interpolationTokens, common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
 	compoundToken.SetQuote(quote)
-	compoundToken.Type = InterpolatedStringTokenType
+	compoundToken.Type = common.InterpolatedStringTokenType
 	return compoundToken, nil
 }
 
@@ -169,7 +169,7 @@ func matches(open, close rune) bool {
 	return (open == '(' && close == ')') || (open == '[' && close == ']') || (open == '{' && close == '}')
 }
 
-func (t *Tokenizer) readStringInterpolation() (*Token, error) {
+func (t *Tokenizer) readStringInterpolation() (*common.Token, error) {
 	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: -1, EndColumn: -1}
 	state := 0       // State 0: inside expression, State 1: inside string
 	var stack []rune // Pushdown stack
@@ -196,7 +196,7 @@ func (t *Tokenizer) readStringInterpolation() (*Token, error) {
 					if len(stack) == 0 {         // End of interpolation
 						text := t.popMark() // Pop the marked position
 						span.EndLine, span.EndColumn = t.line, t.column
-						token := NewExpressionToken(text, span)
+						token := common.NewExpressionToken(text, span)
 						return token, nil
 					}
 				} else {
@@ -296,10 +296,10 @@ func decodeUnicodeEscape(code string) (rune, error) {
 	}
 }
 
-func (t *Tokenizer) readMultilineString(rawFlag bool) (*Token, error) {
+func (t *Tokenizer) readMultilineString(rawFlag bool) (*common.Token, error) {
 	startPosition := t.position
 	startLine, startCol := t.line, t.column
-	var subTokens []*Token
+	var subTokens []*common.Token
 
 	openingQuote, closingIndent, specifier, nlines, terr := t.findClosingIndent()
 	if terr != nil {
@@ -313,7 +313,7 @@ func (t *Tokenizer) readMultilineString(rawFlag bool) (*Token, error) {
 	// The next N lines should be either all whitespace or start with the
 	// closing indent.
 	for range nlines {
-		var tok *Token
+		var tok *common.Token
 		var err error
 		if t.tryConsumeText(closingIndent) {
 			if rawFlag {
@@ -328,7 +328,7 @@ func (t *Tokenizer) readMultilineString(rawFlag bool) (*Token, error) {
 				}
 			}
 		} else {
-			tok = NewStringToken("", "", common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column})
+			tok = common.NewStringToken("", "", common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column})
 			tok.SetQuote(openingQuote)
 		}
 		subTokens = append(subTokens, tok)
@@ -345,7 +345,7 @@ func (t *Tokenizer) readMultilineString(rawFlag bool) (*Token, error) {
 	originalText := t.input[startPosition:t.position]
 
 	// Add the multiline string token
-	token := NewMultiLineStringToken(originalText, "", common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
+	token := common.NewMultiLineStringToken(originalText, "", common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
 	token.Specifier = &specifier
 	token.SetQuote(openingQuote)
 	token.Subtokens = subTokens
@@ -439,7 +439,7 @@ func (t *Tokenizer) readSpecifier() (string, error) {
 	return strtext, nil
 }
 
-func (t *Tokenizer) readRawString(unquoted bool, default_quote rune) (*Token, error) {
+func (t *Tokenizer) readRawString(unquoted bool, default_quote rune) (*common.Token, error) {
 	startPosition := t.position
 	startLine, startCol := t.line, t.column
 	quote := default_quote
@@ -470,7 +470,7 @@ func (t *Tokenizer) readRawString(unquoted bool, default_quote rune) (*Token, er
 
 	// Add the raw string token
 	originalText := t.input[startPosition:t.position]
-	token := NewStringToken(originalText, text.String(), common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
+	token := common.NewStringToken(originalText, text.String(), common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
 	token.SetQuote(quote)
 	return token, nil
 }

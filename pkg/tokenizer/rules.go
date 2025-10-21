@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spicery/nutmeg-compiler/pkg/common"
 	"gopkg.in/yaml.v3"
 )
 
@@ -246,52 +247,52 @@ func getDefaultStartTokens() map[string]StartTokenData {
 		"def": {
 			Expecting: []string{"=>>"},
 			ClosedBy:  []string{"end", "enddef"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"let": {
 			Expecting: []string{"end", "endlet", "do"},
 			ClosedBy:  []string{"end", "endlet"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"switch": {
 			Expecting: []string{"case", "else"},
 			ClosedBy:  []string{"end", "endswitch"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"if": {
 			Expecting: []string{"then"},
 			ClosedBy:  []string{"end", "endif"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"ifnot": {
 			Expecting: []string{"then"},
 			ClosedBy:  []string{"end", "endifnot"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"fn": {
 			Expecting: []string{"=>>"},
 			ClosedBy:  []string{"end", "endfn"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"class": {
 			Expecting: []string{},
 			ClosedBy:  []string{"end", "endclass"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"for": {
 			Expecting: []string{"do"},
 			ClosedBy:  []string{"end", "endfor"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"try": {
 			Expecting: []string{"catch", "else"},
 			ClosedBy:  []string{"end", "endtry"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"transaction": {
 			Expecting: []string{"catch", "else"},
 			ClosedBy:  []string{"end", "endtransaction"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 	}
 }
@@ -301,47 +302,47 @@ func getDefaultBridgeTokens() map[string]BridgeTokenData {
 		"case": {
 			Expecting: []string{"then"},
 			In:        []string{"switch"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"=>>": {
 			Expecting: []string{"end", "enddef", "endfn"},
 			In:        []string{"def"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"do": {
 			Expecting: []string{"end", "endfor", "endlet"},
 			In:        []string{"for", "let"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"then": {
 			Expecting: []string{"case", "elseif", "elseifnot", "else", "end", "endif", "endifnot", "endswitch", "endcase"},
 			In:        []string{"if", "ifnot", "switch"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"elseif": {
 			Expecting: []string{"then"},
 			In:        []string{"if", "ifnot"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 		"elseifnot": {
 			Expecting: []string{"then"},
 			In:        []string{"if", "ifnot"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"else": {
 			Expecting: []string{"end", "endif", "endifnot", "endswitch", "endcase"},
 			In:        []string{"if", "ifnot", "switch"},
-			Arity:     Many,
+			Arity:     common.Many,
 		},
 		"endcase": {
 			Expecting: []string{"end", "endswitch"},
 			In:        []string{"switch"},
-			Arity:     Zero,
+			Arity:     common.Zero,
 		},
 		"catch": {
 			Expecting: []string{},
 			In:        []string{"try"},
-			Arity:     One,
+			Arity:     common.One,
 		},
 	}
 }
