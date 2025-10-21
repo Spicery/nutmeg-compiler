@@ -36,14 +36,21 @@ type RewriterPass struct {
 type Rewriter struct {
 	Name   string         `yaml:"name,omitempty"`
 	Passes []RewriterPass `yaml:"passes,omitempty"`
+	Debug  bool           // If true, emit debug messages to stderr.
 }
 
 // NewRewriter creates a new Rewriter instance from the given RewriteConfig,
 // effectively compiling the configuration into executable rules.
 func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
+	return NewRewriterWithDebug(rewriteConfig, false)
+}
+
+// NewRewriterWithDebug creates a new Rewriter instance with optional debug output.
+func NewRewriterWithDebug(rewriteConfig *RewriteConfig, debug bool) (*Rewriter, error) {
 	rewriter := &Rewriter{
 		Name:   rewriteConfig.Name,
 		Passes: []RewriterPass{},
+		Debug:  debug,
 	}
 	for _, passConfig := range rewriteConfig.Passes {
 		downToIndex := make(map[string]int)
@@ -105,8 +112,10 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 			}
 			onSuccess := u + 1
 			onFailure := u + 1
-			fmt.Fprintln(os.Stderr, "Upwards rule", up.Name)
-			fmt.Fprintln(os.Stderr, "            ", up.RepeatOnSuccess)
+			if debug {
+				fmt.Fprintln(os.Stderr, "Upwards rule", up.Name)
+				fmt.Fprintln(os.Stderr, "            ", up.RepeatOnSuccess)
+			}
 			if up.RepeatOnSuccess {
 				onSuccess = u
 			} else if up.BreakOnSuccess {
@@ -146,12 +155,12 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 		}
 
 		// Optimization 1: Build name-based start index maps.
-		pass.DownwardsStartIndex = buildStartIndexMap(downwards)
-		pass.UpwardsStartIndex = buildStartIndexMap(upwards)
+		pass.DownwardsStartIndex = buildStartIndexMap(downwards, debug)
+		pass.UpwardsStartIndex = buildStartIndexMap(upwards, debug)
 
 		// Optimization 2: Optimize OnSuccess/OnFailure jumps.
-		optimizeRuleJumps(downwards)
-		optimizeRuleJumps(upwards)
+		optimizeRuleJumps(downwards, debug)
+		optimizeRuleJumps(upwards, debug)
 
 		rewriter.Passes = append(rewriter.Passes, pass)
 	}
@@ -189,11 +198,13 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 // buildStartIndexMap creates a map from node name to the first rule index that could match.
 // Returns map[string]int where the value is the starting rule index for that node name.
 // If a name is not in the map, it means no rules apply (default to len(rules)).
-func buildStartIndexMap(rules []*Rule) map[string]int {
+func buildStartIndexMap(rules []*Rule, debug bool) map[string]int {
 	startIndex := make(map[string]int)
 	wildcardIndex := len(rules) // Default: no wildcard found.
 
-	fmt.Fprintln(os.Stderr, "[OPT1] Building start index map for", len(rules), "rules")
+	if debug {
+		fmt.Fprintln(os.Stderr, "[OPT1] Building start index map for", len(rules), "rules")
+	}
 
 	// Scan rules to find first occurrence of each name and any wildcard.
 	for i, rule := range rules {
@@ -202,14 +213,18 @@ func buildStartIndexMap(rules []*Rule) map[string]int {
 				// This is a wildcard rule.
 				if wildcardIndex == len(rules) {
 					wildcardIndex = i
-					fmt.Fprintf(os.Stderr, "[OPT1]   Rule #%d (%s): wildcard - set as default start index\n", i, rule.Name)
+					if debug {
+						fmt.Fprintf(os.Stderr, "[OPT1]   Rule #%d (%s): wildcard - set as default start index\n", i, rule.Name)
+					}
 				}
 			} else {
 				name := *rule.Pattern.Self.Name
 				if _, exists := startIndex[name]; !exists {
 					// First rule for this name.
 					startIndex[name] = i
-					fmt.Fprintf(os.Stderr, "[OPT1]   Rule #%d (%s): first rule for name '%s'\n", i, rule.Name, name)
+					if debug {
+						fmt.Fprintf(os.Stderr, "[OPT1]   Rule #%d (%s): first rule for name '%s'\n", i, rule.Name, name)
+					}
 				}
 			}
 		}
@@ -220,10 +235,14 @@ func buildStartIndexMap(rules []*Rule) map[string]int {
 	// Store the wildcard index under a special key.
 	if wildcardIndex < len(rules) {
 		startIndex[""] = wildcardIndex // Empty string = default/wildcard.
-		fmt.Fprintf(os.Stderr, "[OPT1] Default start index (wildcard): %d\n", wildcardIndex)
+		if debug {
+			fmt.Fprintf(os.Stderr, "[OPT1] Default start index (wildcard): %d\n", wildcardIndex)
+		}
 	} else {
 		startIndex[""] = len(rules) // No wildcard, skip all.
-		fmt.Fprintln(os.Stderr, "[OPT1] No wildcard found - unknown names will skip all rules")
+		if debug {
+			fmt.Fprintln(os.Stderr, "[OPT1] No wildcard found - unknown names will skip all rules")
+		}
 	}
 
 	return startIndex
@@ -232,33 +251,39 @@ func buildStartIndexMap(rules []*Rule) map[string]int {
 // optimizeRuleJumps optimizes OnSuccess and OnFailure jumps by skipping rules that cannot match.
 // For each rule, if its OnSuccess/OnFailure points to a rule that cannot possibly match
 // the same node (based on name constraint), advance the pointer to skip impossible rules.
-func optimizeRuleJumps(rules []*Rule) {
-	fmt.Fprintln(os.Stderr, "[OPT2] Optimizing jump targets for", len(rules), "rules")
+func optimizeRuleJumps(rules []*Rule, debug bool) {
+	if debug {
+		fmt.Fprintln(os.Stderr, "[OPT2] Optimizing jump targets for", len(rules), "rules")
+	}
 	optimizationCount := 0
 
 	for i, rule := range rules {
 		oldSuccess := rule.OnSuccess
 		oldFailure := rule.OnFailure
 
-		rule.OnSuccess = optimizeJump(rule.OnSuccess, rules, rule, true)
-		rule.OnFailure = optimizeJump(rule.OnFailure, rules, rule, false)
+		rule.OnSuccess = optimizeJump(rule.OnSuccess, rules, rule, true, debug)
+		rule.OnFailure = optimizeJump(rule.OnFailure, rules, rule, false, debug)
 
 		if oldSuccess != rule.OnSuccess || oldFailure != rule.OnFailure {
 			optimizationCount++
-			fmt.Fprintf(os.Stderr, "[OPT2]   Rule #%d (%s):", i, rule.Name)
-			if oldSuccess != rule.OnSuccess {
-				fmt.Fprintf(os.Stderr, " OnSuccess: %d→%d", oldSuccess, rule.OnSuccess)
+			if debug {
+				fmt.Fprintf(os.Stderr, "[OPT2]   Rule #%d (%s):", i, rule.Name)
+				if oldSuccess != rule.OnSuccess {
+					fmt.Fprintf(os.Stderr, " OnSuccess: %d→%d", oldSuccess, rule.OnSuccess)
+				}
+				if oldFailure != rule.OnFailure {
+					fmt.Fprintf(os.Stderr, " OnFailure: %d→%d", oldFailure, rule.OnFailure)
+				}
+				fmt.Fprintln(os.Stderr)
 			}
-			if oldFailure != rule.OnFailure {
-				fmt.Fprintf(os.Stderr, " OnFailure: %d→%d", oldFailure, rule.OnFailure)
-			}
-			fmt.Fprintln(os.Stderr)
 		}
 
 		_ = i // Suppress unused variable warning.
 	}
 
-	fmt.Fprintf(os.Stderr, "[OPT2] Optimized %d jump targets\n", optimizationCount)
+	if debug {
+		fmt.Fprintf(os.Stderr, "[OPT2] Optimized %d jump targets\n", optimizationCount)
+	}
 }
 
 // actionChangesName determines if an action might change the Self.Name of a node.
@@ -315,7 +340,7 @@ func actionChangesName(action Action) (bool, *string, bool) {
 // optimizeJump advances a jump target past rules that cannot possibly match.
 // Given a jump destination and the source rule, skip ahead if the destination
 // rule has a name constraint that conflicts with what we know about the node after the action.
-func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess bool) int {
+func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess bool, debug bool) int {
 	if sourceRule == nil || sourceRule.Pattern == nil || sourceRule.Pattern.Self == nil {
 		return jumpTarget
 	}
@@ -335,19 +360,25 @@ func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess boo
 			if isDefinite && newName != nil {
 				// We know the exact new name.
 				expectedName = newName
-				fmt.Fprintf(os.Stderr, "[OPT2]     Action changes name to '%s'\n", *expectedName)
+				if debug {
+					fmt.Fprintf(os.Stderr, "[OPT2]     Action changes name to '%s'\n", *expectedName)
+				}
 			} else {
 				// Name changes unpredictably, can't optimize.
-				fmt.Fprintln(os.Stderr, "[OPT2]     Action changes name unpredictably - can't optimize")
+				if debug {
+					fmt.Fprintln(os.Stderr, "[OPT2]     Action changes name unpredictably - can't optimize")
+				}
 				return jumpTarget
 			}
 		} else {
 			// Name doesn't change, use the matched name.
 			expectedName = matchedName
-			if expectedName != nil {
-				fmt.Fprintf(os.Stderr, "[OPT2]     Name unchanged: '%s'\n", *expectedName)
-			} else {
-				fmt.Fprintln(os.Stderr, "[OPT2]     Name unchanged: wildcard")
+			if debug {
+				if expectedName != nil {
+					fmt.Fprintf(os.Stderr, "[OPT2]     Name unchanged: '%s'\n", *expectedName)
+				} else {
+					fmt.Fprintln(os.Stderr, "[OPT2]     Name unchanged: wildcard")
+				}
 			}
 		}
 	} else {
@@ -368,7 +399,7 @@ func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess boo
 
 		if targetRule.Pattern.Self == nil {
 			// No constraints on Self - matches anything (wildcard) - stop here.
-			if skipped > 0 {
+			if debug && skipped > 0 {
 				fmt.Fprintf(os.Stderr, "[OPT2]     Stopped at rule #%d (no Self constraint) after skipping %d rules\n", jumpTarget, skipped)
 			}
 			break
@@ -393,7 +424,7 @@ func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess boo
 
 		if *targetName == *expectedName {
 			// Names match, this rule could apply - stop here.
-			if skipped > 0 {
+			if debug && skipped > 0 {
 				fmt.Fprintf(os.Stderr, "[OPT2]     Stopped at rule #%d (%s - matches '%s') after skipping %d rules\n", jumpTarget, targetRule.Name, *expectedName, skipped)
 			}
 			break
@@ -404,7 +435,7 @@ func optimizeJump(jumpTarget int, rules []*Rule, sourceRule *Rule, isSuccess boo
 		skipped++
 	}
 
-	if jumpTarget != originalTarget && skipped == 0 {
+	if debug && jumpTarget != originalTarget && skipped == 0 {
 		fmt.Fprintf(os.Stderr, "[OPT2]     No optimization possible (target=%d)\n", jumpTarget)
 	}
 
@@ -418,12 +449,14 @@ func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 
 		// Skip passes that have been marked as skippable.
 		if pass.Skippable {
-			fmt.Fprintf(os.Stderr, "Skipping pass '%s' (single-pass already completed)\n", pass.Name)
+			if r.Debug {
+				fmt.Fprintf(os.Stderr, "Skipping pass '%s' (single-pass already completed)\n", pass.Name)
+			}
 			continue
 		}
 
 		var changed bool
-		node, changed = pass.doRewrite(node, nil)
+		node, changed = pass.doRewrite(node, nil, r.Debug)
 		if changed {
 			anyChanged = true
 		}
@@ -431,32 +464,34 @@ func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 		// Mark single-pass passes as skippable after first execution.
 		if pass.SinglePass && !pass.Skippable {
 			pass.Skippable = true
-			fmt.Fprintf(os.Stderr, "Marking pass '%s' as skippable (single-pass completed)\n", pass.Name)
+			if r.Debug {
+				fmt.Fprintf(os.Stderr, "Marking pass '%s' as skippable (single-pass completed)\n", pass.Name)
+			}
 		}
 	}
 	return node, anyChanged
 }
 
-func (r *RewriterPass) doRewrite(node *common.Node, path *Path) (*common.Node, bool) {
+func (r *RewriterPass) doRewrite(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
 	if node == nil {
 		return nil, false
 	}
 	anyChanged := false
 	var changed bool
 
-	node, changed = r.downwardsRewrites(node, path)
+	node, changed = r.downwardsRewrites(node, path, debug)
 	if changed {
 		anyChanged = true
 	}
 
 	for i := 0; i < len(node.Children); i++ {
-		node.Children[i], changed = r.doRewrite(node.Children[i], &Path{SiblingPosition: i, Parent: node, Others: path})
+		node.Children[i], changed = r.doRewrite(node.Children[i], &Path{SiblingPosition: i, Parent: node, Others: path}, debug)
 		if changed {
 			anyChanged = true
 		}
 	}
 
-	node, changed = r.upwardsRewrites(node, path)
+	node, changed = r.upwardsRewrites(node, path, debug)
 	if changed {
 		anyChanged = true
 	}
@@ -464,19 +499,19 @@ func (r *RewriterPass) doRewrite(node *common.Node, path *Path) (*common.Node, b
 	return node, anyChanged
 }
 
-func (r *RewriterPass) downwardsRewrites(node *common.Node, path *Path) (*common.Node, bool) {
-	return applyRules(node, path, r.DownwardsRules, r.DownwardsStartIndex)
+func (r *RewriterPass) downwardsRewrites(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
+	return applyRules(node, path, r.DownwardsRules, r.DownwardsStartIndex, debug)
 }
 
-func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path) (*common.Node, bool) {
-	return applyRules(node, path, r.UpwardsRules, r.UpwardsStartIndex)
+func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
+	return applyRules(node, path, r.UpwardsRules, r.UpwardsStartIndex, debug)
 }
 
-func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[string]int) (*common.Node, bool) {
+func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[string]int, debug bool) (*common.Node, bool) {
 	// Optimization 1: Start at the first rule that could match this node's name.
 	currentRule := getStartIndex(node.Name, startIndexMap, len(rules))
 
-	if currentRule > 0 {
+	if debug && currentRule > 0 {
 		fmt.Fprintf(os.Stderr, "[OPT1] Node '%s': starting at rule #%d (skipped %d rules)\n", node.Name, currentRule, currentRule)
 	}
 
@@ -493,10 +528,14 @@ func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[
 					anyChanged = true
 				}
 				currentRule = rule.OnSuccess
-				fmt.Fprintln(os.Stderr, "Success with rule", rule.Name, ", moving to rule #", currentRule)
+				if debug {
+					fmt.Fprintln(os.Stderr, "Success with rule", rule.Name, ", moving to rule #", currentRule)
+				}
 			} else {
 				currentRule = rule.OnFailure
-				fmt.Fprintln(os.Stderr, "Failure, moving to rule #", currentRule)
+				if debug {
+					fmt.Fprintln(os.Stderr, "Failure, moving to rule #", currentRule)
+				}
 			}
 		}
 	}

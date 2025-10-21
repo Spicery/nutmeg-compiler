@@ -29,7 +29,7 @@ Options:
 const DEFAULT_FORMAT = "JSON"
 
 func main() {
-	var showHelp, showVersion, noSpans bool
+	var showHelp, showVersion, noSpans, debug bool
 	var inputFile, outputFile, tokenRulesFile, rewriteRulesFile, format, srcPath string
 	var trim int
 
@@ -41,6 +41,7 @@ func main() {
 	flag.BoolVar(&showHelp, "h", false, "Show help")
 	flag.BoolVar(&showHelp, "help", false, "Show help")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
+	flag.BoolVar(&debug, "debug", false, "Enable debug output to stderr")
 	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
 	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
 	flag.StringVar(&srcPath, "src-path", "", "Source path to annotate the unit node")
@@ -160,7 +161,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		r, err := rewriter.NewRewriter(rewriteConfig)
+		r, err := rewriter.NewRewriterWithDebug(rewriteConfig, debug)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating rewriter: %v\n", err)
 			os.Exit(1)
@@ -175,7 +176,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		r, err := rewriter.NewRewriter(rewriteConfig)
+		r, err := rewriter.NewRewriterWithDebug(rewriteConfig, debug)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating rewriter: %v\n", err)
 			os.Exit(1)
