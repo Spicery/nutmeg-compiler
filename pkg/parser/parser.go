@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"os/exec"
@@ -12,6 +13,54 @@ import (
 
 	. "github.com/spicery/nutmeg-compiler/pkg/common"
 )
+
+type ITokenIterator interface {
+	GetToken() (*Token, error)
+}
+
+type ScannerTokenIterator struct {
+	scanner *bufio.Scanner
+}
+
+func NewScannerTokenIterator(input io.Reader) *ScannerTokenIterator {
+	return &ScannerTokenIterator{
+		scanner: bufio.NewScanner(input),
+	}
+}
+
+func (it *ScannerTokenIterator) GetToken() (*Token, error) {
+	if !it.scanner.Scan() {
+		return nil, it.scanner.Err()
+	}
+	line := it.scanner.Bytes()
+	var token Token
+	if err := json.Unmarshal(line, &token); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing token: %v\n", err)
+		return nil, err
+	}
+	return &token, nil
+}
+
+type SliceTokenIterator struct {
+	tokens []*Token
+	index  int
+}
+
+func NewSliceTokenIterator(tokens []*Token) *SliceTokenIterator {
+	return &SliceTokenIterator{
+		tokens: tokens,
+		index:  0,
+	}
+}
+
+func (it *SliceTokenIterator) GetToken() (*Token, error) {
+	if it.index >= len(it.tokens) {
+		return nil, nil // End of tokens.
+	}
+	token := it.tokens[it.index]
+	it.index++
+	return token, nil
+}
 
 type TokenQueue struct {
 	tokens []*Token
@@ -48,33 +97,41 @@ func (q *TokenQueue) Pop() *Token {
 }
 
 type Parser struct {
-	scanner *bufio.Scanner
-	peeked  TokenQueue
-	fragile bool
+	tokenIterator ITokenIterator
+	peeked        TokenQueue
+	fragile       bool
 }
 
 func StringToParser(input string) *Parser {
 	return &Parser{
-		scanner: bufio.NewScanner(strings.NewReader(input)),
-		peeked:  NewPeekQueue(),
-		fragile: true,
+		tokenIterator: NewScannerTokenIterator(strings.NewReader(input)),
+		peeked:        NewPeekQueue(),
+		fragile:       true,
 	}
 }
 
 func NewParser(input *os.File, fragile bool) *Parser {
 	return &Parser{
-		scanner: bufio.NewScanner(input),
-		peeked:  NewPeekQueue(),
-		fragile: fragile,
+		tokenIterator: NewScannerTokenIterator(input),
+		peeked:        NewPeekQueue(),
+		fragile:       fragile,
+	}
+}
+
+func NewParserFromTokens(tokens []*Token, fragile bool) *Parser {
+	return &Parser{
+		tokenIterator: NewSliceTokenIterator(tokens),
+		peeked:        NewPeekQueue(),
+		fragile:       fragile,
 	}
 }
 
 func (p *Parser) Clone(fragile bool) *Parser {
 	// Create a new Parser instance that shares the underlying store.
 	return &Parser{
-		scanner: p.scanner,
-		peeked:  p.peeked,
-		fragile: fragile,
+		tokenIterator: p.tokenIterator,
+		peeked:        p.peeked,
+		fragile:       fragile,
 	}
 }
 
@@ -102,17 +159,7 @@ func (p *Parser) GetToken() (*Token, error) {
 		token := p.peeked.Pop()
 		return token, nil
 	}
-	if !p.scanner.Scan() {
-		return nil, p.scanner.Err()
-	}
-	line := p.scanner.Bytes()
-	var token Token
-	if err := json.Unmarshal(line, &token); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing token: %v\n", err)
-		return nil, err
-	}
-
-	return &token, nil
+	return p.tokenIterator.GetToken()
 }
 
 func (p *Parser) MustReadToken(expectedType TokenType, text string) (*Token, error) {
