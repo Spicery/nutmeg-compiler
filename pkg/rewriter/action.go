@@ -18,6 +18,46 @@ type Action interface {
 /// Actions
 ////////////////////////////////////////////////////////////////////////////////
 
+type NullAction struct {
+}
+
+func (a *NullAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+	// Continue action does nothing but reports success, allowing the rule to succeed
+	// without modifying the node, so processing can continue to the next rule.
+	return node, false
+}
+
+type FailAction struct {
+	Message string
+}
+
+func (a *FailAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+	// Output error message with span information and exit immediately.
+	if node != nil {
+		fmt.Fprintf(os.Stderr, "%s, for node '%s', at line %d, column %d\n", a.Message, node.Name, node.Span.StartLine, node.Span.StartColumn)
+	} else {
+		fmt.Fprintf(os.Stderr, "Validation error (no node): %s\n", a.Message)
+	}
+	os.Exit(1)
+	return node, false
+}
+
+type AssertAction struct {
+	AssertPattern *Pattern
+}
+
+func (a *AssertAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+	// Test if the assertion pattern matches the node.
+	matches, _ := a.AssertPattern.Matches(node, path)
+	if !matches {
+		// Output error message with span information and node name.
+		fmt.Fprintf(os.Stderr, "Node '%s' failed to meet pattern conditions, at %s\n", node.Name, node.Span.SpanString())
+		os.Exit(1)
+		return node, false
+	}
+	return node, false
+}
+
 type ReplaceValueFromAction struct {
 	Key    string
 	Source string

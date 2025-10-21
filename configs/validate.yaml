@@ -1,0 +1,133 @@
+name: Validate the generated AST
+description: Validate that the generated AST matches the required format
+passes:
+
+  - name: Pass 1
+    singlePass: true
+    downwards:
+      - name: number
+        match:
+          self:
+            name: number
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: string
+        match:
+          self:
+            name: string
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: Syscall
+        match:
+          self:
+            name: syscall
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: If
+        match:
+          self:
+            name: if
+        action:
+          assert:
+            self:
+              count: 3
+        breakOnSuccess: true
+
+      - name: Switch
+        match:
+          self:
+            name: switch
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: Case
+        match:
+          self:
+            name: case
+        action:
+          assert:
+            parent:
+              name: switch
+        breakOnSuccess: true
+
+      - name: Else
+        match:
+          self:
+            name: else
+        action:
+          assert:
+            parent:
+              name: switch
+            self:
+              siblingPosition: -1
+        breakOnSuccess: true
+
+      - name: Seq
+        match:
+          self:
+            name: seq
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: Unit
+        match:
+          self:
+            name: unit
+        action:
+          continue: true
+        breakOnSuccess: true
+
+      - name: for
+        match:
+          self:
+            name: for
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: bind
+        match:
+          self:
+            name: bind
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: assign
+        match:
+          self:
+            name: assign
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: update
+        match:
+          self:
+            name: update
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+
+      - name: Fail Validation
+        match:
+          self:
+            name.regexp: ".*"
+        action:
+          fail: "Validation failed"

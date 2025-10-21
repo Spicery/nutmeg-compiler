@@ -33,7 +33,7 @@ passes:
           self:
             name: part
             key: keyword
-            matches: case|then
+            value.regexp: case|then
         action:
           replaceName:
             src: self

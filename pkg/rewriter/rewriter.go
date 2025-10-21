@@ -67,6 +67,8 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 			onFailure := d + 1
 			if down.RepeatOnSuccess {
 				onSuccess = d
+			} else if down.BreakOnSuccess {
+				onSuccess = len(passConfig.Downwards) // Skip remaining rules
 			} else if down.OnSuccess != nil {
 				value, exists := downToIndex[*down.OnSuccess]
 				if exists {
@@ -75,7 +77,9 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 					return nil, fmt.Errorf("error in downwards rule \"%s/%s\": onSuccess refers to unknown rule \"%s\"", passConfig.Name, down.Name, *down.OnSuccess)
 				}
 			}
-			if down.OnFailure != nil {
+			if down.BreakOnFailure {
+				onFailure = len(passConfig.Downwards) // Skip remaining rules
+			} else if down.OnFailure != nil {
 				value, exists := downToIndex[*down.OnFailure]
 				if exists {
 					onFailure = value
@@ -105,6 +109,8 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 			fmt.Fprintln(os.Stderr, "            ", up.RepeatOnSuccess)
 			if up.RepeatOnSuccess {
 				onSuccess = u
+			} else if up.BreakOnSuccess {
+				onSuccess = len(passConfig.Upwards) // Skip remaining rules
 			} else if up.OnSuccess != nil {
 				value, exists := upToIndex[*up.OnSuccess]
 				if exists {
@@ -113,7 +119,9 @@ func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
 					return nil, fmt.Errorf("error in upwards rule \"%s/%s\": onSuccess refers to unknown rule \"%s\"", passConfig.Name, up.Name, *up.OnSuccess)
 				}
 			}
-			if up.OnFailure != nil {
+			if up.BreakOnFailure {
+				onFailure = len(passConfig.Upwards) // Skip remaining rules
+			} else if up.OnFailure != nil {
 				value, exists := upToIndex[*up.OnFailure]
 				if exists {
 					onFailure = value

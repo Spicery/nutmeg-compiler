@@ -30,6 +30,8 @@ type RewriteRule struct {
 	OnSuccess       *string      `yaml:"onSuccess,omitempty"`
 	OnFailure       *string      `yaml:"onFailure,omitempty"`
 	RepeatOnSuccess bool         `yaml:"repeatOnSuccess,omitempty"`
+	BreakOnSuccess  bool         `yaml:"breakOnSuccess,omitempty"`
+	BreakOnFailure  bool         `yaml:"breakOnFailure,omitempty"`
 }
 
 // ActionConfig defines what action to take when a match is found
@@ -47,6 +49,9 @@ type ActionConfig struct {
 	MergeChildWithNext *bool               `yaml:"mergeChildWithNext,omitempty"`
 	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
 	PermuteChildren    []int               `yaml:"permuteChildren,omitempty"`
+	Continue           bool                `yaml:"continue,omitempty"`
+	Fail               *string             `yaml:"fail,omitempty"`
+	Assert             *Pattern            `yaml:"assert,omitempty"`
 }
 
 type NewNodeChildConfig struct {
@@ -130,6 +135,15 @@ func (ac ActionConfig) Validate() error {
 	}
 	if len(ac.PermuteChildren) > 0 {
 		// fmt.Println("PermuteChildren count:", len(ac.PermuteChildren))
+		count++
+	}
+	if ac.Continue {
+		count++
+	}
+	if ac.Fail != nil {
+		count++
+	}
+	if ac.Assert != nil {
 		count++
 	}
 	if count == 0 {
@@ -244,6 +258,15 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	}
 	if len(ac.PermuteChildren) > 0 {
 		return &PermuteChildrenAction{NewOrder: ac.PermuteChildren}, nil
+	}
+	if ac.Continue {
+		return &NullAction{}, nil
+	}
+	if ac.Fail != nil {
+		return &FailAction{Message: *ac.Fail}, nil
+	}
+	if ac.Assert != nil {
+		return &AssertAction{AssertPattern: ac.Assert}, nil
 	}
 	// Future actions can be handled here
 	return nil, fmt.Errorf("no valid action found in ActionConfig: %+v", ac)

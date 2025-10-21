@@ -10,14 +10,16 @@ import (
 )
 
 type NodePattern struct {
-	Name            *string        `yaml:"name,omitempty"`
-	Key             *string        `yaml:"key,omitempty"`
-	Value           *string        `yaml:"value,omitempty"`
-	PatternString   *string        `yaml:"matches,omitempty"`
-	Pattern         *regexp.Regexp `yaml:"-"` // Compiled regexp, not marshaled.
-	Cmp             *bool          `yaml:"cmp,omitempty"`
-	Count           *int           `yaml:"count,omitempty"`
-	SiblingPosition *int           `yaml:"siblingPosition,omitempty"`
+	Name              *string        `yaml:"name,omitempty"`
+	NameRegexpString  *string        `yaml:"name.regexp,omitempty"`
+	NameRegexp        *regexp.Regexp `yaml:"-"` // Compiled regexp, not marshaled.
+	Key               *string        `yaml:"key,omitempty"`
+	Value             *string        `yaml:"value,omitempty"`
+	ValueRegexpString *string        `yaml:"value.regexp,omitempty"`
+	ValueRegexp       *regexp.Regexp `yaml:"-"` // Compiled regexp, not marshaled.
+	Cmp               *bool          `yaml:"cmp,omitempty"`
+	Count             *int           `yaml:"count,omitempty"`
+	SiblingPosition   *int           `yaml:"siblingPosition,omitempty"`
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling with validation.
@@ -31,15 +33,24 @@ func (np *NodePattern) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	// Compile the regexp if pattern string is present.
-	if np.PatternString != nil {
+	if np.ValueRegexpString != nil {
 		// Anchor the pattern at both start and end to ensure full string match.
 		// Use a non-capturing group to treat the user's pattern as a single unit.
-		anchoredPattern := "^(?:" + *np.PatternString + ")$"
+		anchoredPattern := "^(?:" + *np.ValueRegexpString + ")$"
 		compiled, err := regexp.Compile(anchoredPattern)
 		if err != nil {
 			return fmt.Errorf("invalid regexp in 'matches': %w", err)
 		}
-		np.Pattern = compiled
+		np.ValueRegexp = compiled
+	}
+
+	if np.NameRegexpString != nil {
+		anchoredPattern := "^(?:" + *np.NameRegexpString + ")$"
+		compiled, err := regexp.Compile(anchoredPattern)
+		if err != nil {
+			return fmt.Errorf("invalid regexp in 'name.regexp': %w", err)
+		}
+		np.NameRegexp = compiled
 	}
 
 	return nil
@@ -67,6 +78,11 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 	if np.Name != nil && node.Name != *np.Name {
 		return false
 	}
+	if np.NameRegexp != nil {
+		if !np.NameRegexp.MatchString(node.Name) {
+			return false
+		}
+	}
 	if np.Key != nil {
 		val, exists := node.Options[*np.Key]
 		if !exists {
@@ -75,8 +91,8 @@ func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
 		if np.Value != nil && (val == *np.Value) != np.GetCmp() {
 			return false
 		}
-		if np.Pattern != nil {
-			matched := np.Pattern.MatchString(val)
+		if np.ValueRegexp != nil {
+			matched := np.ValueRegexp.MatchString(val)
 			if matched != np.GetCmp() {
 				return false
 			}
