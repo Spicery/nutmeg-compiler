@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 // Tokenizer represents the main tokenizer structure.
@@ -124,7 +126,7 @@ func (t *Tokenizer) addTokenAndManageStack(token *Token) error {
 			exceptionToken := NewExceptionToken(token.Text, "invalid numeric literal: "+reason, token.Span)
 			t.tokens = append(t.tokens, exceptionToken)
 			return fmt.Errorf("tokenisation error at line %d, column %d: %s",
-				exceptionToken.Span.Start.Line, exceptionToken.Span.Start.Col, *exceptionToken.Reason)
+				exceptionToken.Span.StartLine, exceptionToken.Span.StartColumn, *exceptionToken.Reason)
 		}
 	}
 
@@ -145,7 +147,7 @@ func (t *Tokenizer) addTokenAndManageStack(token *Token) error {
 	// If this is an exception token, stop processing
 	if token.Type == ExceptionTokenType {
 		return fmt.Errorf("tokenisation error at line %d, column %d: %s",
-			token.Span.Start.Line, token.Span.Start.Col, *token.Reason)
+			token.Span.StartLine, token.Span.StartColumn, *token.Reason)
 	}
 
 	// Manage the expecting stack based on token type and text
@@ -196,7 +198,8 @@ func (t *Tokenizer) nextToken() error {
 			return err
 		}
 		if token != nil {
-			token.Span.Start = start
+			token.Span.StartLine = start.Line
+			token.Span.StartColumn = start.Col
 			if sawNewlineBefore {
 				token.LnBefore = &sawNewlineBefore
 			}
@@ -205,7 +208,8 @@ func (t *Tokenizer) nextToken() error {
 	}
 
 	if token := t.matchNumeric(); token != nil {
-		token.Span.Start = start
+		token.Span.StartLine = start.Line
+		token.Span.StartColumn = start.Col
 		if sawNewlineBefore {
 			token.LnBefore = &sawNewlineBefore
 		}
@@ -214,7 +218,8 @@ func (t *Tokenizer) nextToken() error {
 
 	// Check custom rules first - they take precedence over defaults
 	if token := t.matchCustomRules(); token != nil {
-		token.Span.Start = start
+		token.Span.StartLine = start.Line
+		token.Span.StartColumn = start.Col
 		if sawNewlineBefore {
 			token.LnBefore = &sawNewlineBefore
 		}
@@ -225,7 +230,7 @@ func (t *Tokenizer) nextToken() error {
 	r, size := utf8.DecodeRuneInString(t.input[t.position:])
 	text := string(r)
 	end := Position{Line: t.line, Col: t.column + size}
-	span := Span{Start: start, End: end}
+	span := common.Span{StartLine: start.Line, StartColumn: start.Col, EndLine: end.Line, EndColumn: end.Col}
 
 	token := NewToken(text, UnclassifiedTokenType, span)
 	if sawNewlineBefore {
@@ -333,8 +338,7 @@ func (t *Tokenizer) parseRadixNumber(match []string) *Token {
 				fraction = strings.ReplaceAll(fraction, "_", "")
 			}
 
-			end := Position{Line: t.line, Col: t.column + len(fullMatch)}
-			span := Span{End: end}
+			span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column + len(fullMatch)}
 			t.advance(len(fullMatch))
 
 			exponentVal := 0
@@ -379,8 +383,7 @@ func (t *Tokenizer) parseRadixNumber(match []string) *Token {
 		fraction = strings.ReplaceAll(fraction, "_", "")
 	}
 
-	end := Position{Line: t.line, Col: t.column + len(fullMatch)}
-	span := Span{End: end}
+	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column + len(fullMatch)}
 	t.advance(len(fullMatch))
 
 	exponentVal := 0
@@ -414,8 +417,7 @@ func (t *Tokenizer) parseDecimalNumber(match []string) *Token {
 		fraction = strings.ReplaceAll(fraction, "_", "")
 	}
 
-	end := Position{Line: t.line, Col: t.column + len(fullMatch)}
-	span := Span{End: end}
+	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column + len(fullMatch)}
 	t.advance(len(fullMatch))
 
 	exponentVal := 0
@@ -431,8 +433,7 @@ func (t *Tokenizer) parseDecimalNumber(match []string) *Token {
 
 // createExceptionToken creates an exception token for invalid numeric formats.
 func (t *Tokenizer) createExceptionToken(text, reason string) *Token {
-	end := Position{Line: t.line, Col: t.column + len(text)}
-	span := Span{End: end}
+	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column + len(text)}
 	t.advance(len(text))
 	return NewExceptionToken(text, reason, span)
 }
@@ -451,11 +452,7 @@ func (t *Tokenizer) matchCustomRules() *Token {
 		return nil
 	}
 
-	// fmt.Println("Custom rules token text:", text)
-	// fmt.Println("is_identifier?", is_identifier)
-
-	end := Position{Line: t.line, Col: t.column + len(text)}
-	span := Span{End: end}
+	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column + len(text)}
 
 	// Efficient lookup - single map access
 	entry, exists := t.rules.TokenLookup[text]

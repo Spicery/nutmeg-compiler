@@ -1,8 +1,9 @@
 package tokenizer
 
 import (
-	"encoding/json"
 	"strings"
+
+	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 // TokenType represents the different types of tokens.
@@ -38,29 +39,6 @@ type Position struct {
 	Col  int `json:"col"`
 }
 
-// Span represents the start and end positions of a token.
-type Span struct {
-	Start Position `json:"start"`
-	End   Position `json:"end"`
-}
-
-// MarshalJSON implements custom JSON marshaling for Span.
-func (s Span) MarshalJSON() ([]byte, error) {
-	arr := [4]int{s.Start.Line, s.Start.Col, s.End.Line, s.End.Col}
-	return json.Marshal(arr)
-}
-
-// UnmarshalJSON implements custom JSON unmarshaling for Span.
-func (s *Span) UnmarshalJSON(data []byte) error {
-	var arr [4]int
-	if err := json.Unmarshal(data, &arr); err != nil {
-		return err
-	}
-	s.Start = Position{Line: arr[0], Col: arr[1]}
-	s.End = Position{Line: arr[2], Col: arr[3]}
-	return nil
-}
-
 type Arity int
 
 const (
@@ -72,10 +50,10 @@ const (
 // Token represents a single token from the Nutmeg source code.
 type Token struct {
 	// Common fields for all tokens
-	Text  string    `json:"text"`
-	Span  Span      `json:"span"`
-	Type  TokenType `json:"type"`
-	Alias *string   `json:"alias,omitempty"` // The node alias, if any
+	Text  string      `json:"text"`
+	Span  common.Span `json:"span"`
+	Type  TokenType   `json:"type"`
+	Alias *string     `json:"alias,omitempty"` // The node alias, if any
 
 	// String token fields
 	Quote     string   `json:"quote,omitempty"`
@@ -126,7 +104,7 @@ func (t *Token) SetQuote(r rune) {
 }
 
 // NewToken creates a new token with the basic required fields.
-func NewToken(text string, tokenType TokenType, span Span) *Token {
+func NewToken(text string, tokenType TokenType, span common.Span) *Token {
 	return &Token{
 		Text: text,
 		Type: tokenType,
@@ -135,7 +113,7 @@ func NewToken(text string, tokenType TokenType, span Span) *Token {
 }
 
 // NewStringToken creates a new string token with interpreted value.
-func NewStringToken(text, value string, span Span) *Token {
+func NewStringToken(text, value string, span common.Span) *Token {
 	return &Token{
 		Text:  text,
 		Type:  StringLiteralTokenType,
@@ -144,7 +122,7 @@ func NewStringToken(text, value string, span Span) *Token {
 	}
 }
 
-func NewMultiLineStringToken(text, value string, span Span) *Token {
+func NewMultiLineStringToken(text, value string, span common.Span) *Token {
 	return &Token{
 		Text:  text,
 		Type:  MultiLineStringTokenType,
@@ -153,7 +131,7 @@ func NewMultiLineStringToken(text, value string, span Span) *Token {
 	}
 }
 
-func NewInterpolatedStringToken(text string, subtokens []*Token, span Span) *Token {
+func NewInterpolatedStringToken(text string, subtokens []*Token, span common.Span) *Token {
 	return &Token{
 		Text:      text,
 		Type:      StringLiteralTokenType,
@@ -162,7 +140,7 @@ func NewInterpolatedStringToken(text string, subtokens []*Token, span Span) *Tok
 	}
 }
 
-func NewExpressionToken(text string, span Span) *Token {
+func NewExpressionToken(text string, span common.Span) *Token {
 	return &Token{
 		Text:  text,
 		Type:  ExpressionTokenType,
@@ -172,7 +150,7 @@ func NewExpressionToken(text string, span Span) *Token {
 }
 
 // NewNumericToken creates a new numeric token with radix and components.
-func NewNumericToken(text string, radix string, base int, mantissa, fraction string, exponent int, span Span) *Token {
+func NewNumericToken(text string, radix string, base int, mantissa, fraction string, exponent int, span common.Span) *Token {
 	token := &Token{
 		Text:     text,
 		Type:     NumericLiteralTokenType,
@@ -193,7 +171,7 @@ func NewNumericToken(text string, radix string, base int, mantissa, fraction str
 }
 
 // NewBalancedTernaryToken creates a new balanced ternary numeric token.
-func NewBalancedTernaryToken(text string, mantissa, fraction string, exponent int, span Span) *Token {
+func NewBalancedTernaryToken(text string, mantissa, fraction string, exponent int, span common.Span) *Token {
 	radixPrefix := "0t"
 	base := 3
 	balanced := true
@@ -218,7 +196,7 @@ func NewBalancedTernaryToken(text string, mantissa, fraction string, exponent in
 }
 
 // NewStartToken creates a new start token with expecting and closed_by tokens.
-func NewStartToken(text string, expecting, closedBy []string, span Span, arity Arity) *Token {
+func NewStartToken(text string, expecting, closedBy []string, span common.Span, arity Arity) *Token {
 	return &Token{
 		Text:      text,
 		Type:      StartTokenType,
@@ -230,7 +208,7 @@ func NewStartToken(text string, expecting, closedBy []string, span Span, arity A
 }
 
 // NewOperatorToken creates a new operator token with precedence values.
-func NewOperatorToken(text string, prefix, infix, postfix int, span Span) *Token {
+func NewOperatorToken(text string, prefix, infix, postfix int, span common.Span) *Token {
 	token := &Token{
 		Text: text,
 		Type: OperatorTokenType,
@@ -247,7 +225,7 @@ func NewOperatorToken(text string, prefix, infix, postfix int, span Span) *Token
 }
 
 // NewDelimiterToken creates a new open delimiter token.
-func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix bool, span Span) *Token {
+func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix bool, span common.Span) *Token {
 	return &Token{
 		Text:            text,
 		Type:            OpenDelimiterTokenType,
@@ -259,16 +237,16 @@ func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix boo
 }
 
 // NewStmntBridgeToken creates a new bridge token with expecting and in attributes.
-func NewStmntBridgeToken(text string, expecting, in []string, span Span) *Token {
+func NewStmntBridgeToken(text string, expecting, in []string, span common.Span) *Token {
 	return NewBridgeToken(text, expecting, in, Many, span)
 }
 
 // NewExprBridgeToken creates a new compound token with expecting and in attributes.
-func NewExprBridgeToken(text string, expecting, in []string, span Span) *Token {
+func NewExprBridgeToken(text string, expecting, in []string, span common.Span) *Token {
 	return NewBridgeToken(text, expecting, in, One, span)
 }
 
-func NewBridgeToken(text string, expecting, in []string, arity Arity, span Span) *Token {
+func NewBridgeToken(text string, expecting, in []string, arity Arity, span common.Span) *Token {
 	return &Token{
 		Text:      text,
 		Type:      BridgeTokenType,
@@ -280,7 +258,7 @@ func NewBridgeToken(text string, expecting, in []string, arity Arity, span Span)
 }
 
 // NewWildcardBridgeToken creates a wildcard bridge token with copied attributes.
-func NewWildcardBridgeToken(text, expectedText string, expecting, in []string, arity Arity, span Span) *Token {
+func NewWildcardBridgeToken(text, expectedText string, expecting, in []string, arity Arity, span common.Span) *Token {
 	return &Token{
 		Text:      text,
 		Type:      BridgeTokenType,
@@ -292,7 +270,7 @@ func NewWildcardBridgeToken(text, expectedText string, expecting, in []string, a
 	}
 }
 
-func NewUnclassifiedToken(text string, span Span) *Token {
+func NewUnclassifiedToken(text string, span common.Span) *Token {
 	return &Token{
 		Text: text,
 		Type: UnclassifiedTokenType,
@@ -301,7 +279,7 @@ func NewUnclassifiedToken(text string, span Span) *Token {
 }
 
 // NewExceptionToken creates a new exception token with an error reason.
-func NewExceptionToken(text, reason string, span Span) *Token {
+func NewExceptionToken(text, reason string, span common.Span) *Token {
 	return &Token{
 		Text:   text,
 		Type:   ExceptionTokenType,

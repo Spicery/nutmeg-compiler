@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
 // matchString attempts to match a string literal.
@@ -82,7 +84,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 	start_position := t.position
 	startLine, startCol := t.line, t.column
 	currPosition := t.position
-	currSpan := Span{Position{startLine, startCol}, Position{-1, -1}}
+	currSpan := common.Span{StartLine: startLine, StartColumn: startCol, EndLine: -1, EndColumn: -1}
 	quote := default_quote
 	if !unquoted {
 		quote = getMatchingCloseQuote(t.consume()) // Consume the opening quote
@@ -105,7 +107,8 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 				// End the current StringToken and handle interpolation
 				if value.Len() > 0 {
 					textString := t.input[currPosition:t.position]
-					currSpan.End = beforeBackSlash
+					currSpan.EndLine = beforeBackSlash.Line
+					currSpan.EndColumn = beforeBackSlash.Col
 					valueString := value.String()
 					current := NewStringToken(textString, valueString, currSpan)
 					current.SetQuote(quote)
@@ -118,7 +121,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 				}
 				interpolationTokens = append(interpolationTokens, interpolatedToken)
 				currPosition = t.position
-				currSpan = Span{Position{t.line, t.column}, Position{-1, -1}}
+				currSpan = common.Span{StartLine: t.line, StartColumn: t.column, EndLine: -1, EndColumn: -1}
 			} else {
 				value.WriteString(handleEscapeSequence(t))
 			}
@@ -138,7 +141,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 	// Add the final StringToken if there's remaining text
 	if value.Len() > 0 {
 		textString := t.input[currPosition:t.position]
-		currSpan.End.Line, currSpan.End.Col = t.line, t.column
+		currSpan.EndLine, currSpan.EndColumn = t.line, t.column
 		token := NewStringToken(textString, value.String(), currSpan)
 		token.SetQuote(quote)
 		interpolationTokens = append(interpolationTokens, token)
@@ -155,7 +158,7 @@ func (t *Tokenizer) readString(unquoted bool, default_quote rune) (*Token, error
 	}
 
 	// Combine into a StringInterpolationToken if interpolation occurred
-	compoundToken := NewInterpolatedStringToken(text, interpolationTokens, Span{Position{startLine, startCol}, Position{t.line, t.column}})
+	compoundToken := NewInterpolatedStringToken(text, interpolationTokens, common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
 	compoundToken.SetQuote(quote)
 	compoundToken.Type = InterpolatedStringTokenType
 	return compoundToken, nil
@@ -167,7 +170,7 @@ func matches(open, close rune) bool {
 }
 
 func (t *Tokenizer) readStringInterpolation() (*Token, error) {
-	span := Span{Position{t.line, t.column}, Position{-1, -1}}
+	span := common.Span{StartLine: t.line, StartColumn: t.column, EndLine: -1, EndColumn: -1}
 	state := 0       // State 0: inside expression, State 1: inside string
 	var stack []rune // Pushdown stack
 
@@ -177,7 +180,7 @@ func (t *Tokenizer) readStringInterpolation() (*Token, error) {
 
 	for {
 		if !t.hasMoreInput() {
-			return nil, fmt.Errorf("unterminated interpolation, at line %d, Column: %d", span.Start.Line, span.Start.Col)
+			return nil, fmt.Errorf("unterminated interpolation, at line %d, Column: %d", span.StartLine, span.StartColumn)
 		}
 		r := t.consume()
 		switch state {
@@ -192,12 +195,12 @@ func (t *Tokenizer) readStringInterpolation() (*Token, error) {
 					stack = stack[:len(stack)-1] // Pop stack
 					if len(stack) == 0 {         // End of interpolation
 						text := t.popMark() // Pop the marked position
-						span.End.Line, span.End.Col = t.line, t.column
+						span.EndLine, span.EndColumn = t.line, t.column
 						token := NewExpressionToken(text, span)
 						return token, nil
 					}
 				} else {
-					return nil, fmt.Errorf("mismatched bracket, at line %d, Column: %d", span.Start.Line, span.Start.Col)
+					return nil, fmt.Errorf("mismatched bracket, at line %d, Column: %d", span.StartLine, span.StartColumn)
 				}
 			case '"', '\'', '`', '«': // Enter string state
 				stack = append(stack, getMatchingCloseQuote(r))
@@ -219,7 +222,7 @@ func (t *Tokenizer) readStringInterpolation() (*Token, error) {
 						handleEscapeSequence(t)
 					}
 				} else {
-					return nil, fmt.Errorf("unterminated escape sequence, at line %d, Column: %d", span.Start.Line, span.Start.Col)
+					return nil, fmt.Errorf("unterminated escape sequence, at line %d, Column: %d", span.StartLine, span.StartColumn)
 				}
 			case stack[len(stack)-1]: // Matching closing quote
 				stack = stack[:len(stack)-1] // Pop stack
@@ -325,7 +328,7 @@ func (t *Tokenizer) readMultilineString(rawFlag bool) (*Token, error) {
 				}
 			}
 		} else {
-			tok = NewStringToken("", "", Span{Position{t.line, t.column}, Position{t.line, t.column}})
+			tok = NewStringToken("", "", common.Span{StartLine: t.line, StartColumn: t.column, EndLine: t.line, EndColumn: t.column})
 			tok.SetQuote(openingQuote)
 		}
 		subTokens = append(subTokens, tok)
@@ -342,7 +345,7 @@ func (t *Tokenizer) readMultilineString(rawFlag bool) (*Token, error) {
 	originalText := t.input[startPosition:t.position]
 
 	// Add the multiline string token
-	token := NewMultiLineStringToken(originalText, "", Span{Position{startLine, startCol}, Position{t.line, t.column}})
+	token := NewMultiLineStringToken(originalText, "", common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
 	token.Specifier = &specifier
 	token.SetQuote(openingQuote)
 	token.Subtokens = subTokens
@@ -467,7 +470,7 @@ func (t *Tokenizer) readRawString(unquoted bool, default_quote rune) (*Token, er
 
 	// Add the raw string token
 	originalText := t.input[startPosition:t.position]
-	token := NewStringToken(originalText, text.String(), Span{Position{startLine, startCol}, Position{t.line, t.column}})
+	token := NewStringToken(originalText, text.String(), common.Span{StartLine: startLine, StartColumn: startCol, EndLine: t.line, EndColumn: t.column})
 	token.SetQuote(quote)
 	return token, nil
 }
