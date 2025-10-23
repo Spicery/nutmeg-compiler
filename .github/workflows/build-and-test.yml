@@ -111,9 +111,9 @@ jobs:
 
     - name: Test with example files
       run: |
-        ./nutmeg-tokenizer --input examples/simple.nutmeg > /tmp/simple_output.json
-        ./nutmeg-tokenizer --input examples/numeric.nutmeg > /tmp/numeric_output.json
-        
+        ./nutmeg-tokenizer --input snippets/simple.nutmeg > /tmp/simple_output.json
+        ./nutmeg-tokenizer --input snippets/numeric.nutmeg > /tmp/numeric_output.json
+
         # Verify the outputs are valid JSON
         cat /tmp/simple_output.json | jq . > /dev/null
         cat /tmp/numeric_output.json | jq . > /dev/null
