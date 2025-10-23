@@ -1,7 +1,7 @@
 default:
     @just --list
 
-test: functest unittest lint fmt-check tidy build
+test: functest unittest lint fmt-check gosec tidy build
 
 functest:
     (cd functests && uv run python3 functest.py --quiet --tests */*.yaml)
@@ -19,6 +19,17 @@ lint:
         echo "golangci-lint not found, falling back to go vet"; \
         echo "To install golangci-lint locally, run: just install-golangci-lint"; \
         go vet ./...; \
+    fi
+
+gosec:
+    @echo "Running security scanner..."
+    @if command -v ~/go/bin/gosec >/dev/null 2>&1; then \
+        ~/go/bin/gosec -quiet -fmt=text ./...; \
+    elif command -v gosec >/dev/null 2>&1; then \
+        gosec -quiet -fmt=text ./...; \
+    else \
+        echo "gosec not found, skipping security scan"; \
+        echo "To install gosec, run: go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
     fi
 
 # Install golangci-lint to ~/.tools/ext/bin  
