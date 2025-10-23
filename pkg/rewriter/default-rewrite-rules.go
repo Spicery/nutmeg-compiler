@@ -488,6 +488,15 @@ passes:
               count: 2
         breakOnSuccess: true
 
+      - name: Let
+        match:
+          self:
+            name: let
+        action:
+          assert:
+            continue: 2
+        breakOnSuccess: true
+
       - name: Fail Validation
         match:
           self:
