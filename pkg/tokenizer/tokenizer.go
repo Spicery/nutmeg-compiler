@@ -519,7 +519,11 @@ func (t *Tokenizer) matchCustomRules() *common.Token {
 	case CustomOperator:
 		precedence := entry.Data.([3]int)
 		t.advance(len(text))
-		return common.NewOperatorToken(text, precedence[0], precedence[1], precedence[2], span)
+		// Defensive check appropriate because gosec cannot verify array bounds.
+		if len(precedence) >= 3 {
+			return common.NewOperatorToken(text, precedence[0], precedence[1], precedence[2], span)
+		}
+		return common.NewOperatorToken(text, 0, 0, 0, span)
 
 	case CustomOpenDelimiter:
 		delimiterData := entry.Data.(struct {

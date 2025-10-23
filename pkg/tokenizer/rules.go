@@ -129,7 +129,7 @@ func DefaultRules() *TokenizerRules {
 
 // LoadRulesFile loads and parses a YAML rules file
 func LoadRulesFile(filename string) (*RulesFile, error) {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) // #nosec G304 - CLI tool reads user-specified config files
 	if err != nil {
 		return nil, fmt.Errorf("failed to read rules file '%s': %w", filename, err)
 	}

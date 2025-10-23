@@ -274,7 +274,7 @@ func (ac ActionConfig) ToAction() (Action, error) {
 
 // LoadSubstitutions loads substitutions from a YAML file
 func LoadRewriteConfig(filename string) (*RewriteConfig, error) {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) // #nosec G304 - CLI tool reads user-specified config files
 	if err != nil {
 		return nil, err
 	}

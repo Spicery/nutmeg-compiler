@@ -96,7 +96,7 @@ func main() {
 	// Determine input source
 	var input io.Reader = os.Stdin
 	if inputFile != "" {
-		file, err := os.Open(inputFile)
+		file, err := os.Open(inputFile) // #nosec G304 - CLI tool reads user-specified input files
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening input file: %v\n", err)
 			os.Exit(1)
@@ -108,7 +108,7 @@ func main() {
 	// Determine output destination
 	var output io.Writer = os.Stdout
 	if outputFile != "" {
-		file, err := os.Create(outputFile)
+		file, err := os.Create(outputFile) // #nosec G304 - CLI tool writes to user-specified output files
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating output file: %v\n", err)
 			os.Exit(1)

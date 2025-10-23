@@ -137,7 +137,7 @@ func main() {
 		output = os.Stdout
 	} else {
 		// Write to file
-		file, err := os.Create(outputFile)
+		file, err := os.Create(outputFile) // #nosec G304 - CLI tool writes to user-specified output files
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating output file '%s': %v\n", outputFile, err)
 			os.Exit(1)
@@ -188,7 +188,7 @@ func readFromStdin() (string, error) {
 
 // readFromFile reads the contents of a file.
 func readFromFile(filename string) (string, error) {
-	bytes, err := os.ReadFile(filename)
+	bytes, err := os.ReadFile(filename) // #nosec G304 - CLI tool reads user-specified input files
 	if err != nil {
 		return "", err
 	}
