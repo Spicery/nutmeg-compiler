@@ -306,7 +306,7 @@ func getDefaultBridgeTokens() map[string]BridgeTokenData {
 		},
 		"=>>": {
 			Expecting: []string{"end", "enddef", "endfn"},
-			In:        []string{"def"},
+			In:        []string{"def", "fn"},
 			Arity:     common.Many,
 		},
 		"do": {

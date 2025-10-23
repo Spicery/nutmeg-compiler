@@ -494,9 +494,19 @@ passes:
             name: let
         action:
           assert:
-            continue: 2
+            continue: true
         breakOnSuccess: true
 
+      - name: Fn
+        match:
+          self:
+            name: fn
+        action:
+          assert:
+            self:
+              count: 2
+        breakOnSuccess: true
+        
       - name: Fail Validation
         match:
           self:
