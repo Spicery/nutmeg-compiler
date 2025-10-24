@@ -48,6 +48,11 @@ type StartTokenData struct {
 	Arity     common.Arity
 }
 
+type PrefixTokenData struct {
+	Precedence int
+	Arity      common.Arity
+}
+
 // Bridge tokens (B) with their attributes
 type BridgeTokenData struct {
 	Expecting []string
@@ -509,8 +514,9 @@ func (t *Tokenizer) matchCustomRules() *common.Token {
 		return common.NewStmntBridgeToken(text, bridgeData.Expecting, bridgeData.In, span)
 
 	case CustomPrefix:
+		prec := entry.Data.(PrefixTokenData)
 		t.advance(len(text))
-		return common.NewToken(text, common.PrefixTokenType, span)
+		return common.NewPrefixToken(text, prec.Precedence, common.PrefixTokenType, span, prec.Arity)
 
 	case CustomMark:
 		t.advance(len(text))

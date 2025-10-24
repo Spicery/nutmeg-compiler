@@ -248,7 +248,7 @@ func (p *Parser) DoReadPrimaryExpr(optional bool) (*Node, error) {
 		p.DropPeekedToken()
 		return p.ReadId(token)
 	case "[":
-		if token.Prefix != nil && *token.Prefix {
+		if token.PrefixPrecedence != nil && *token.PrefixPrecedence > 0 {
 			p.DropPeekedToken()
 			return p.ReadDelimited(token)
 		} else {
@@ -266,9 +266,9 @@ func (p *Parser) DoReadPrimaryExpr(optional bool) (*Node, error) {
 		}
 		return nil, fmt.Errorf("unexpected end token '%s' at line %d, char %d", token.Text, token.Span.StartLine, token.Span.StartColumn)
 	case OperatorTokenType:
-		if token.Precedence != nil && len(token.Precedence) > 0 && token.Precedence[0] > 0 {
+		if token.PrefixPrecedence != nil && *token.PrefixPrecedence > 0 {
 			p.DropPeekedToken()
-			arg, err := p.TryReadExprPrec(token.Precedence[0])
+			arg, err := p.TryReadExprPrec(*token.PrefixPrecedence)
 			if err != nil {
 				return nil, err
 			}
@@ -587,7 +587,7 @@ func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {
 		part := &Node{
 			Name: NamePart,
 			Options: map[string]string{
-				OptionName: token.Text,
+				OptionKeyword: token.Text,
 			},
 			Span:     token.Span,
 			Children: []*Node{},
@@ -605,7 +605,7 @@ func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {
 		part := &Node{
 			Name: NamePart,
 			Options: map[string]string{
-				OptionName: token.Text,
+				OptionKeyword: token.Text,
 			},
 			Span:     *token.Span.ToSpan(&operand.Span),
 			Children: []*Node{operand},

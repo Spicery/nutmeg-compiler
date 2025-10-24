@@ -8,6 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const LOOSE = 9999
+const TIGHT = 100
+
 // RulesFile represents the structure of a YAML rules file
 type RulesFile struct {
 	Bracket  []BracketRule  `yaml:"bracket"`
@@ -33,7 +36,8 @@ type BracketRule struct {
 
 // PrefixRule represents a prefix token rule
 type PrefixRule struct {
-	Text string `yaml:"text"`
+	Text       string `yaml:"text"`
+	Precedence int    `yaml:"precedence"`
 }
 
 // StartRule represents a start token rule
@@ -87,14 +91,14 @@ const (
 // CustomRuleEntry holds the rule type and any associated data
 type CustomRuleEntry struct {
 	Type CustomRuleType
-	Data interface{} // Can be StartTokenData, BridgeTokenData, etc.
+	Data any // Can be StartTokenData, BridgeTokenData, etc.
 }
 
 // TokenizerRules holds all the rule maps that can be customized
 type TokenizerRules struct {
 	StartTokens         map[string]StartTokenData
 	BridgeTokens        map[string]BridgeTokenData
-	PrefixTokens        map[string]bool
+	PrefixTokens        map[string]PrefixTokenData
 	DelimiterMappings   map[string][]string
 	DelimiterProperties map[string]DelimiterProp
 	WildcardTokens      map[string]bool
@@ -160,9 +164,9 @@ func ApplyRulesToDefaults(rules *RulesFile) (*TokenizerRules, error) {
 
 	// Apply prefix rules
 	if len(rules.Prefix) > 0 {
-		tokenizerRules.PrefixTokens = make(map[string]bool)
+		tokenizerRules.PrefixTokens = make(map[string]PrefixTokenData)
 		for _, rule := range rules.Prefix {
-			tokenizerRules.PrefixTokens[rule.Text] = true
+			tokenizerRules.PrefixTokens[rule.Text] = PrefixTokenData{Precedence: rule.Precedence}
 		}
 	}
 
@@ -347,13 +351,13 @@ func getDefaultBridgeTokens() map[string]BridgeTokenData {
 	}
 }
 
-func getDefaultPrefixTokens() map[string]bool {
-	return map[string]bool{
-		"return": true,
-		"yield":  true,
-		"const":  true,
-		"var":    true,
-		"val":    true,
+func getDefaultPrefixTokens() map[string]PrefixTokenData {
+	return map[string]PrefixTokenData{
+		"return": {Precedence: LOOSE, Arity: common.One},
+		"yield":  {Precedence: LOOSE, Arity: common.One},
+		"const":  {Precedence: TIGHT, Arity: common.One},
+		"var":    {Precedence: TIGHT, Arity: common.One},
+		"val":    {Precedence: TIGHT, Arity: common.One},
 	}
 }
 
@@ -428,8 +432,8 @@ func (rules *TokenizerRules) BuildTokenLookup() error {
 	}
 
 	// Add prefix tokens
-	for token := range rules.PrefixTokens {
-		if err := addToken(token, CustomPrefix, "prefix", nil); err != nil {
+	for token, data := range rules.PrefixTokens {
+		if err := addToken(token, CustomPrefix, "prefix", data); err != nil {
 			return err
 		}
 	}
@@ -506,16 +510,23 @@ func updateOperatorPrecedence(m map[string][3]int, operator string) {
 }
 
 // calculateOperatorPrecedence calculates precedence based on rules in operators.md
+// TIGHT: 0-999
+// PREFIX: 1000-1999
+// UNKNOWN: 2000 (to 2999)
+// INFIX: 3000-3999
+// POSTFIX: 4000-4999
+// LOOSE: 9000-9999
 func calculateOperatorPrecedence(operator string) (prefix, infix, postfix int) {
 	if len(operator) == 0 {
 		return 0, 0, 0
 	}
 
 	firstChar := rune(operator[0])
-	basePrecedence, exists := baseOperatorPrecedence[firstChar]
+	b, exists := baseOperatorPrecedence[firstChar]
+	basePrecedence := b + 1000
 	if !exists {
 		// Fallback for unknown operators
-		basePrecedence = 1000
+		basePrecedence = 1999
 	}
 
 	// If the first character is repeated, subtract 1

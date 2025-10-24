@@ -608,13 +608,13 @@ func TestOperatorTokens(t *testing.T) {
 				t.Errorf("Expected operator token, got %s", token.Type)
 			}
 
-			if token.Precedence == nil {
-				t.Errorf("Expected precedence to be set")
-				return
-			}
+			// Check precedence values.
+			prefix := token.PrefixPrec()
+			infix := token.InfixPrec()
+			postfix := token.PostfixPrec()
 
-			if *token.Precedence != tt.expectedPrecedence {
-				t.Errorf("Expected precedence %v, got %v", tt.expectedPrecedence, *token.Precedence)
+			if prefix != tt.expectedPrecedence[0] || infix != tt.expectedPrecedence[1] || postfix != tt.expectedPrecedence[2] {
+				t.Errorf("Expected precedence %v, got [%d, %d, %d]", tt.expectedPrecedence, prefix, infix, postfix)
 			}
 		})
 	}
@@ -671,8 +671,10 @@ func TestDelimiterTokens(t *testing.T) {
 					t.Errorf("Expected infix %d, got %v", tt.infixPrec, token.InfixPrecedence)
 				}
 
-				if token.Prefix == nil || *token.Prefix != tt.isPrefix {
-					t.Errorf("Expected prefix %t, got %v", tt.isPrefix, token.Prefix)
+				// Check if prefix precedence is set when isPrefix is true.
+				hasPrefix := token.PrefixPrecedence != nil && *token.PrefixPrecedence > 0
+				if hasPrefix != tt.isPrefix {
+					t.Errorf("Expected prefix %t, got %t", tt.isPrefix, hasPrefix)
 				}
 			}
 		})

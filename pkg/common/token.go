@@ -1,6 +1,8 @@
 package common
 
-import "strings"
+import (
+	"strings"
+)
 
 // TokenType represents the different types of tokens.
 type TokenType string
@@ -66,12 +68,10 @@ type Token struct {
 	ClosedBy  []string `json:"closed_by,omitempty"` // For start tokens and delimiter tokens - what can close them
 	Arity     *Arity   `json:"arity,omitempty"`     // For start tokens - whether they introduce a single statement block
 
-	// Operator token fields
-	Precedence *[3]int `json:"precedence,omitempty"` // [prefix, infix, postfix] precedence values
-
-	// Delimiter fields (for '[' tokens)
-	InfixPrecedence *int  `json:"infix,omitempty"`  // For delimiter infix usage
-	Prefix          *bool `json:"prefix,omitempty"` // For delimiter prefix usage
+	// Operator and delimiter precedence fields
+	PrefixPrecedence  *int `json:"prefix,omitempty"`  // Prefix precedence for operators and delimiters
+	InfixPrecedence   *int `json:"infix,omitempty"`   // Infix precedence for operators and delimiters
+	PostfixPrecedence *int `json:"postfix,omitempty"` // Postfix precedence for operators
 
 	// Exception token fields
 	Reason *string `json:"reason,omitempty"` // For exception tokens - explanation of the error
@@ -202,6 +202,19 @@ func NewStartToken(text string, expecting, closedBy []string, span Span, arity A
 	}
 }
 
+func NewPrefixToken(text string, precedence int, tokenType TokenType, span Span, arity Arity) *Token {
+	token := &Token{
+		Text:  text,
+		Type:  tokenType,
+		Span:  span,
+		Arity: &arity,
+	}
+	if precedence > 0 {
+		token.PrefixPrecedence = &precedence
+	}
+	return token
+}
+
 // NewOperatorToken creates a new operator token with precedence values.
 func NewOperatorToken(text string, prefix, infix, postfix int, span Span) *Token {
 	token := &Token{
@@ -210,10 +223,15 @@ func NewOperatorToken(text string, prefix, infix, postfix int, span Span) *Token
 		Span: span,
 	}
 
-	// Only set precedence if at least one value is non-zero.
-	if prefix > 0 || infix > 0 || postfix > 0 {
-		precedence := [3]int{prefix, infix, postfix}
-		token.Precedence = &precedence
+	// Set precedence values if non-zero.
+	if prefix > 0 {
+		token.PrefixPrecedence = &prefix
+	}
+	if infix > 0 {
+		token.InfixPrecedence = &infix
+	}
+	if postfix > 0 {
+		token.PostfixPrecedence = &postfix
 	}
 
 	return token
@@ -221,14 +239,25 @@ func NewOperatorToken(text string, prefix, infix, postfix int, span Span) *Token
 
 // NewDelimiterToken creates a new open delimiter token.
 func NewDelimiterToken(text string, closedBy []string, isInfix int, isPrefix bool, span Span) *Token {
-	return &Token{
-		Text:            text,
-		Type:            OpenDelimiterTokenType,
-		Span:            span,
-		ClosedBy:        closedBy,
-		InfixPrecedence: &isInfix,
-		Prefix:          &isPrefix,
+	token := &Token{
+		Text:     text,
+		Type:     OpenDelimiterTokenType,
+		Span:     span,
+		ClosedBy: closedBy,
 	}
+
+	// Set infix precedence if non-zero.
+	if isInfix > 0 {
+		token.InfixPrecedence = &isInfix
+	}
+
+	// Set prefix precedence if isPrefix is true (using a fixed precedence value).
+	if isPrefix {
+		prefixPrec := 1 // Delimiter prefix usage gets a fixed precedence.
+		token.PrefixPrecedence = &prefixPrec
+	}
+
+	return token
 }
 
 // NewStmntBridgeToken creates a new bridge token with expecting and in attributes.
@@ -400,24 +429,21 @@ func (t *Token) InfixPrec() int {
 	if t.InfixPrecedence != nil {
 		return *t.InfixPrecedence
 	}
-	if t.Precedence != nil {
-		return t.Precedence[1]
-	}
 	return 0
 }
 
 // PrefixPrec returns the prefix precedence of the token.
 func (t *Token) PrefixPrec() int {
-	if t.Precedence != nil {
-		return t.Precedence[0]
+	if t.PrefixPrecedence != nil {
+		return *t.PrefixPrecedence
 	}
 	return 0
 }
 
 // PostfixPrec returns the postfix precedence of the token.
 func (t *Token) PostfixPrec() int {
-	if t.Precedence != nil {
-		return t.Precedence[2]
+	if t.PostfixPrecedence != nil {
+		return *t.PostfixPrecedence
 	}
 	return 0
 }

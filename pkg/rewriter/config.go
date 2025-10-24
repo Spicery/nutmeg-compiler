@@ -17,6 +17,7 @@ type RewriteConfig struct {
 // Pass represents a single named pass containing rewrite rules
 type Pass struct {
 	Name       string        `yaml:"name"`
+	Optional   bool          `yaml:"optional,omitempty"`
 	SinglePass bool          `yaml:"singlePass,omitempty"`
 	Downwards  []RewriteRule `yaml:"downwards,omitempty"`
 	Upwards    []RewriteRule `yaml:"upwards,omitempty"`
