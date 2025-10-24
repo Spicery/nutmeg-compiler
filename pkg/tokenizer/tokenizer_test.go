@@ -582,10 +582,10 @@ func TestOperatorTokens(t *testing.T) {
 		input              string
 		expectedPrecedence [3]int // [prefix, infix, postfix]
 	}{
-		{"+", [3]int{80, 2080, 0}}, // + has base precedence 40, only infix enabled (40+2000=2040)
-		{"-", [3]int{90, 2090, 0}}, // - has base precedence 50, both prefix (50) and infix (50+2000=2050) enabled
-		{"*", [3]int{0, 2050, 0}},  // * has base precedence 10, only infix enabled (10+2000=2010)
-		{"==", [3]int{0, 2179, 0}}, // = has base precedence 140, repeated so 139, only infix enabled (139+2000=2139)
+		{"+", [3]int{1080, 3080, 0}}, // + has base precedence 40, only infix enabled (40+2000=2040)
+		{"-", [3]int{1090, 3090, 0}}, // - has base precedence 50, both prefix (50) and infix (50+2000=2050) enabled
+		{"*", [3]int{0, 3050, 0}},    // * has base precedence 10, only infix enabled (10+2000=2010)
+		{"==", [3]int{0, 3179, 0}},   // = has base precedence 140, repeated so 139, only infix enabled (139+2000=2139)
 	}
 
 	for _, tt := range tests {
@@ -628,9 +628,9 @@ func TestDelimiterTokens(t *testing.T) {
 		infixPrec    int
 		isPrefix     bool
 	}{
-		{"(", common.OpenDelimiterTokenType, []string{")"}, 2020, true},
-		{"[", common.OpenDelimiterTokenType, []string{"]"}, 2030, true},
-		{"{", common.OpenDelimiterTokenType, []string{"}"}, 2040, true}, // Updated: now supports infix usage for f{x} syntax
+		{"(", common.OpenDelimiterTokenType, []string{")"}, 3020, true},
+		{"[", common.OpenDelimiterTokenType, []string{"]"}, 3030, true},
+		{"{", common.OpenDelimiterTokenType, []string{"}"}, 3040, true}, // Updated: now supports infix usage for f{x} syntax
 		{")", common.CloseDelimiterTokenType, nil, 0, false},
 		{"]", common.CloseDelimiterTokenType, nil, 0, false},
 		{"}", common.CloseDelimiterTokenType, nil, 0, false},

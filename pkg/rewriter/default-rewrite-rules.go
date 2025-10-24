@@ -338,6 +338,7 @@ passes:
       onSuccess: Inline nested sequences
 
   - name: Pass 5, Validate
+    optional: true
     singlePass: true
     downwards:
       - name: number
@@ -506,7 +507,7 @@ passes:
             self:
               count: 2
         breakOnSuccess: true
-        
+
       - name: Fail Validation
         match:
           self:

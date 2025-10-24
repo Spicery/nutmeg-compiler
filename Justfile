@@ -54,10 +54,12 @@ build:
     go build -o bin/nutmeg-tokenizer ./cmd/nutmeg-tokenizer
     go build -o bin/nutmeg-parser ./cmd/nutmeg-parser
     go build -o bin/nutmeg-rewriter ./cmd/nutmeg-rewriter
+    go build -o bin/nutmeg-common ./cmd/nutmeg-common
     go build -o bin/nutmeg-convert-tree ./cmd/nutmeg-convert-tree
 
 install:
     go install ./cmd/nutmeg-tokenizer
     go install ./cmd/nutmeg-parser
     go install ./cmd/nutmeg-rewriter
+    go install ./cmd/nutmeg-common
     go install ./cmd/nutmeg-convert-tree

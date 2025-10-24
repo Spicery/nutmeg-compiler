@@ -42,17 +42,30 @@ type Rewriter struct {
 // NewRewriter creates a new Rewriter instance from the given RewriteConfig,
 // effectively compiling the configuration into executable rules.
 func NewRewriter(rewriteConfig *RewriteConfig) (*Rewriter, error) {
-	return NewRewriterWithDebug(rewriteConfig, false)
+	return NewRewriterWithOptions(rewriteConfig, false, false)
 }
 
 // NewRewriterWithDebug creates a new Rewriter instance with optional debug output.
 func NewRewriterWithDebug(rewriteConfig *RewriteConfig, debug bool) (*Rewriter, error) {
+	return NewRewriterWithOptions(rewriteConfig, debug, false)
+}
+
+// NewRewriterWithOptions creates a new Rewriter instance with optional debug output and skip-optional flag.
+func NewRewriterWithOptions(rewriteConfig *RewriteConfig, debug bool, skipOptional bool) (*Rewriter, error) {
 	rewriter := &Rewriter{
 		Name:   rewriteConfig.Name,
 		Passes: []RewriterPass{},
 		Debug:  debug,
 	}
 	for _, passConfig := range rewriteConfig.Passes {
+		// Skip optional passes if skipOptional is true.
+		if skipOptional && passConfig.Optional {
+			if debug {
+				fmt.Fprintf(os.Stderr, "Skipping optional pass: %s\n", passConfig.Name)
+			}
+			continue
+		}
+
 		downToIndex := make(map[string]int)
 		for d, down := range passConfig.Downwards {
 			downToIndex[down.Name] = d
