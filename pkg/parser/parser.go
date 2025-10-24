@@ -574,7 +574,6 @@ func (p *Parser) TryReadSemiColon() bool {
 }
 
 func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {
-
 	form := &Node{
 		Name: NameForm,
 		Options: map[string]string{
@@ -583,7 +582,7 @@ func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {
 		Span:     token.Span,
 		Children: []*Node{},
 	}
-	if token.Arity == nil || *token.Arity != One {
+	if token.Arity == nil || *token.Arity == Zero {
 		part := &Node{
 			Name: NamePart,
 			Options: map[string]string{
@@ -595,7 +594,7 @@ func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {
 		form.Children = append(form.Children, part)
 	} else if token.Arity != nil && *token.Arity == One {
 		// Handle prefix operators like 'return', 'yield', etc.
-		operand, err := p.TryReadExprPrec(math.MaxInt)
+		operand, err := p.TryReadExprPrec(*token.PrefixPrecedence)
 		if err != nil {
 			return nil, err
 		}
@@ -611,6 +610,8 @@ func (p *Parser) ReadPrefixForm(token *Token) (*Node, error) {
 			Children: []*Node{operand},
 		}
 		form.Children = append(form.Children, part)
+	} else if token.Arity != nil && *token.Arity == Many {
+		return nil, fmt.Errorf("unimplemented: prefix form with many arity for token '%s' at line %d, char %d", token.Text, token.Span.StartLine, token.Span.StartColumn)
 	}
 	return form, nil
 }
