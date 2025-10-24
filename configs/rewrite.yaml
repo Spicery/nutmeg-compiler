@@ -56,7 +56,7 @@ passes:
           self:
             name: operator
             key: name
-            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
+            value.regexp: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
             count: 2
         action:
           replaceName:

@@ -10,7 +10,7 @@ passes:
           self:
             name: operator
             key: name
-            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
+            value.regexp: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
         action:
           replaceName:
             with: syscall

@@ -54,17 +54,6 @@ passes:
                 key: sign
                 values: ["+", "-"]
 
-      - name: Operator to Syscall
-        match:
-          self:
-            name: operator
-            key: name
-            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
-            count: 2
-        action:
-          replaceName:
-            with: syscall
-
       - name: Change ':=' to bind (POP)
         match:
           self:
@@ -97,6 +86,17 @@ passes:
         action:
           replaceName:
             with: update
+
+      - name: Operator to Syscall
+        match:
+          self:
+            name: operator
+            key: name
+            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
+            count: 2
+        action:
+          replaceName:
+            with: syscall
 
       - name: Fuse let parts
         match:
