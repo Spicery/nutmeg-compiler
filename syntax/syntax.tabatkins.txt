@@ -1,16 +1,18 @@
 // Grammar
 Diagram(
     Comment('NutmegUnit'),
-    ZeroOrMore(NonTerminal('Definition'))
+    ZeroOrMore(NonTerminal('D'))
 )
 
-// Definition - TODO, add attributes.
+// Definitions - TODO attributes
 Diagram(
-    Comment('Definition'),
-    Choice(0,
-        NonTerminal('Bind'),
-        NonTerminal('Def'),
-        NonTerminal('Class')
+    Comment('D (Definitions)'),
+    ZeroOrMore(
+        Choice(0,
+            NonTerminal('Bind'),
+            NonTerminal('Def'),
+            NonTerminal('Class')
+        )
     )
 )
 
@@ -38,6 +40,8 @@ Diagram(
         NonTerminal('Apply'),
         Terminal('/=>>|:/'),
         NonTerminal('S'),
+        Optional(Sequence(Terminal('do'), NonTerminal('S'))),
+        Optional(Sequence(Terminal('with'), NonTerminal('D'))),
         Terminal('/end|enddef/')
     )
 )
@@ -58,7 +62,7 @@ Diagram(
                 Terminal(';')
             )
         ),
-        ZeroOrMore(NonTerminal('Definition')),
+        ZeroOrMore(NonTerminal('D')),
         Terminal('/end|endclass/')
     )
 )
