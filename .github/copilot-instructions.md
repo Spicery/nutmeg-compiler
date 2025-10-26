@@ -1,11 +1,34 @@
 # Nutmeg Compiler Toolchain
 
+## Collaboration Guidelines
+
+When providing technical assistance:
+
+- **Be objective and critical**: Focus on technical correctness over agreeability
+- **Challenge assumptions**: If code has clear technical flaws, point them out directly
+- **Prioritize correctness**: Don't compromise on proper implementation to avoid disagreement
+- **Think through implications**: Consider how users will actually use features in practice
+- **Be direct about problems**: If something is wrong or will cause user confusion, say so clearly
+
+The goal is to build robust, well-designed software, not to avoid technical disagreements.
+
 ## Programming Guidelines
 
 - Comments should be proper sentences, with correct grammar and punctuation,
   including the use of capitalization and periods.
 - Where defensive checks are added, include a comment explaining why they are
   appropriate (not necessary, since defensive checks are not necessary).
+- I prefer text files to use new-line as a terminator rather than a separator
+  i.e. newlines at the end of non-empty files.
+- And lines should not have trailing whitespace.
+
+## Test Guidelines
+
+- When testing the behaviour of a binary, such as nutmeg-tokenizer, always use 
+  `go run ./cmd/nutmeg-tokenizer`
+  rather than `./nutmeg-tokenizer` directory. This ensures you are always testing
+  the latest code rather than an out-of-date compiled binary. (Unless you are 
+  deliberately testing an out-of-date binary).
 
 ## Nutmeg Tokenizer - a standalone tokenizer for the Nutmeg project
 
@@ -83,23 +106,8 @@ a shape like this:
 
 In the future this will be expanded to provide more details.
 
-### Programming Guidelines
 
-- Comments should be proper sentences, with correct grammar and punctuation,
-  including the use of capitalization and periods.
 
-- Where defensive checks are added, include a comment explaining why they are
-  appropriate (not necessary, since defensive checks are not necessary).
-
-- I prefer text files to use new-line as a terminator rather than a separator
-  i.e. newlines at the end of non-empty files.
-
-### Test Guidelines
-
-- When testing the behaviour of the binary, always use `go run ./cmd/nutmeg-tokenizer`
-  rather than `./nutmeg-tokenizer` directory. This ensures you are always testing
-  the latest code rather than an out-of-date compiled binary. (Unless you are 
-  deliberately testing an out-of-date binary).
   
 ### Collaboration Guidelines
 
@@ -189,32 +197,22 @@ a shape like this:
 
 In the future this will be expanded to provide more details.
 
-### Programming Guidelines
-
-- Comments should be proper sentences, with correct grammar and punctuation,
-  including the use of capitalization and periods.
-
-- Where defensive checks are added, include a comment explaining why they are
-  appropriate (not necessary, since defensive checks are not necessary).
-
-- I prefer text files to use new-line as a terminator rather than a separator
-  i.e. newlines at the end of non-empty files.
-
-### Test Guidelines
-
-- When testing the behaviour of the binary, always use `go run ./cmd/nutmeg-tokenizer`
-  rather than `./nutmeg-tokenizer` directory. This ensures you are always testing
-  the latest code rather than an out-of-date compiled binary. (Unless you are 
-  deliberately testing an out-of-date binary).
   
-### Collaboration Guidelines
 
-When providing technical assistance:
+## Nutmeg Rewriter - a standalone rewriter for the Nutmeg project
 
-- **Be objective and critical**: Focus on technical correctness over agreeability
-- **Challenge assumptions**: If code has clear technical flaws, point them out directly
-- **Prioritize correctness**: Don't compromise on proper implementation to avoid disagreement
-- **Think through implications**: Consider how users will actually use features in practice
-- **Be direct about problems**: If something is wrong or will cause user confusion, say so clearly
+We are collaborating on the development of a standalone rewrite engine for the Nutmeg
+programming language, implemented in the Go programming language. Given a stream
+of node in JSON format, the rewriter transforms each node in turn and then outputs 
+each node in various formats.
 
-The goal is to build robust, well-designed software, not to avoid technical disagreements.
+## Nutmeg Convert Tree
+
+We are collaborating on the development of a standalone tree converter for the Nutmeg
+programming language, implemented in the Go programming language. Given a stream
+of node in JSON format, the converter prints each node in the specified target format.
+
+## Nutmeg Common
+
+This repository creates a single Go application that chains together the tokenizer,
+parser and rewriter to form a complete parser for the common syntax.
