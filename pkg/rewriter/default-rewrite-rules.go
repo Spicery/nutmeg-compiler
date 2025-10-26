@@ -339,13 +339,12 @@ passes:
 
   - name: Pass 5, qualifiers
     singlePass: true
-    downwards:
 
+    downwards:
       - name: Rewrite qualifiers
         match:
           self:
             name: var
-            count: 1
           child:
             name: id
         action:
@@ -355,6 +354,7 @@ passes:
                   key: qualifier
                   with: var
             - replaceByChild: 0
+        breakOnSuccess: true
 
       - name: Rewrite qualifiers
         match:
@@ -369,6 +369,7 @@ passes:
                   key: qualifier
                   with: val
             - replaceByChild: 0
+        breakOnSuccess: true
 
       - name: Rewrite qualifiers
         match:
@@ -383,6 +384,14 @@ passes:
                   key: qualifier
                   with: const
             - replaceByChild: 0
+        breakOnSuccess: true
+
+      - name: Validate qualifiers
+        match:
+          self:
+            name: val
+        action:
+          fail: "Qualifier was not followed by an identifier"
 
 
   - name: Last pass, Validate
