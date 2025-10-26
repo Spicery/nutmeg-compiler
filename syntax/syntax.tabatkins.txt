@@ -8,8 +8,9 @@ Diagram(
 Diagram(
     Comment('Definition'),
     Choice(0,
+        NonTerminal('Bind'),
         NonTerminal('Def'),
-        NonTerminal('Bind')
+        NonTerminal('Class')
     )
 )
 
@@ -19,7 +20,7 @@ Diagram(
     Sequence(
         NonTerminal('Id'),
         Terminal(':='),
-        NonTerminal('Expression')
+        NonTerminal('E')
     )
 )
 
@@ -36,18 +37,39 @@ Diagram(
         Terminal('def'),
         NonTerminal('Apply'),
         Terminal('/=>>|:/'),
-        NonTerminal('Statements'),
+        NonTerminal('S'),
         Terminal('/end|enddef/')
+    )
+)
+
+// Class - fix =>>
+Diagram(
+    Comment('Class'),
+    Sequence(
+        Terminal('class'),
+        NonTerminal('Id'),
+        Terminal('/:|=>>/'),
+        ZeroOrMore(
+            Sequence(
+                Terminal('slot'),
+                NonTerminal('Id'),
+                Terminal('='),
+                NonTerminal('E'),
+                Terminal(';')
+            )
+        ),
+        ZeroOrMore(NonTerminal('Definition')),
+        Terminal('/end|endclass/')
     )
 )
 
 // Statements
 Diagram(
-    Comment('Statements'),
+    Comment('S (Statements)'),
     Sequence(
         ZeroOrMore(
             Sequence(
-                NonTerminal('Statement'),
+                NonTerminal('E'),
                 Terminal(';')
             )
         ),
@@ -55,53 +77,31 @@ Diagram(
     )
 )
 
-// Statement
-Diagram(
-    Comment('Statement'),
-    NonTerminal('Expression')
-)
-
 // Expression
 Diagram(
-    Comment('Expression'),
+    Comment('E (Expression)'),
     Choice(0,
         NonTerminal('Literal'),
         NonTerminal('Identifier'),
         NonTerminal('Bracketed'),
         NonTerminal('Call'),
-        NonTerminal('OperatorExpression'),
-        NonTerminal('FormExpression'),
-        NonTerminal('PrefixForm')
-    )
-)
-
-// Arguments
-Diagram(
-    Comment('Arguments'),
-    Optional(
-        Sequence(
-            NonTerminal('Expression'),
-            ZeroOrMore(
-                Sequence(
-                    Terminal(','),
-                    NonTerminal('Expression')
-                )
-            )
-        )
+        NonTerminal('Operator'),
+        NonTerminal('If'),
+        NonTerminal('For')
     )
 )
 
 // Statements
 Diagram(
-    Comment('Statements'),
+    Comment('S'),
     Sequence(
         ZeroOrMore(
             Sequence(
-                NonTerminal('Expression'),
+                NonTerminal('E'),
                 Choice(0, Terminal(';'), Terminal('\\n'))
             )
         ),
-        Optional(NonTerminal('Expression'))
+        Optional(NonTerminal('E'))
     )
 )
 
@@ -137,6 +137,22 @@ Diagram(
     )
 )
 
+// Arguments
+Diagram(
+    Comment('Arguments'),
+    Optional(
+        Sequence(
+            NonTerminal('E'),
+            ZeroOrMore(
+                Sequence(
+                    Terminal(','),
+                    NonTerminal('E')
+                )
+            )
+        )
+    )
+)
+
 // Call
 Diagram(
     Comment('Call'),
@@ -150,7 +166,7 @@ Diagram(
 Diagram(
     Comment('Apply'),
     Sequence(
-        NonTerminal('Expression'),
+        NonTerminal('E'),
         NonTerminal('Bracketed')
     )
 )
@@ -159,20 +175,25 @@ Diagram(
 Diagram(
     Comment('Invoke'),
     Sequence(
-        NonTerminal('Expression'),
-        Terminal('.'),
+        Choice(0,
+            Sequence(
+                NonTerminal('E'),
+                Terminal('.')
+            ),
+            Terminal('^')
+        ),
         NonTerminal('identifier'),
         Optional(NonTerminal('Bracketed'))
     )
 )
 
-// OperatorExpression
+// Operator
 Diagram(
-    Comment('OperatorExpression'),
+    Comment('Operator'),
     Sequence(
-        NonTerminal('Expression'),
+        NonTerminal('E'),
         Terminal('/[-+*/]|:=|<-|<--/'),
-        NonTerminal('Expression')
+        Optional(NonTerminal('E'))
     )
 )
 
@@ -200,20 +221,21 @@ Diagram(
 Diagram(
     Comment('IfCore'),
     Sequence(
-        NonTerminal('Expression'),
+        NonTerminal('E'),
         Terminal('/then|:/'),
+        NonTerminal('S'),
         ZeroOrMore(
             Sequence(
                 Terminal('/elseif|elseifnot/'),
-                NonTerminal('Expression'),
+                NonTerminal('E'),
                 Terminal('/then|:/'),
-                NonTerminal('Expression')
+                NonTerminal('S')
             )
         ),
         Optional(
             Sequence(
                 NonTerminal('else'),
-                NonTerminal('Expression')
+                NonTerminal('S')
             )
         )
     )
@@ -226,67 +248,7 @@ Diagram(
         Terminal('for'),
         NonTerminal('Query'),
         Terminal('/do|:/'),
-        NonTerminal('Statements'),
+        NonTerminal('S'),
         Terminal('/end|endfor/')
     )    
 )
-
-
-// Part
-Diagram(
-    Comment('Part'),
-    Choice(
-        0,
-        Sequence(
-            NonTerminal('NamedBreaker'),
-            NonTerminal('Statements')
-        ),
-        Sequence(
-            Terminal('CascadedBreaker'),
-            Optional(
-                Sequence(
-                    NonTerminal('Expression'),
-                    Terminal(':')
-                )
-            ),
-            NonTerminal('Statements')
-        )
-    )
-)
-
-// NamedBreaker
-Diagram(
-    Comment('NamedBreaker'),
-    Sequence(
-        NonTerminal('Identifier'),
-        Terminal(':'),
-    )
-)
-
-
-// Cascaded Breaker
-Diagram(
-    Comment('CascadedBreaker'),
-    Sequence(
-        NonTerminal('CoreIdentifier'),
-        Terminal('-'),
-        NonTerminal('enclosing-form-start'),
-        Terminal(':')
-    )
-)
-
-// PrefixForm
-Diagram(
-    Comment('PrefixForm'),
-    Sequence(
-        NonTerminal('CoreIdentifier'),
-        Terminal('!'),
-        ZeroOrMore(NonTerminal('Expression')),
-        ZeroOrMore(
-            Choice(0, NonTerminal('NamedBreaker'), NonTerminal('CascadedBreaker')),
-            ZeroOrMore(NonTerminal('Expression'))
-        ),
-        Optional(Choice(0, Terminal(';'), Terminal('\\n')))
-    )
-)
-
