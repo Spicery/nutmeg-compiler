@@ -1,0 +1,68 @@
+name: Rewrite qualifiers
+passes:
+
+  - name: Rewrite qualifiers
+    singlePass: true
+    # downwards:
+    #   - name: Detect nested qualifiers
+    #     match:
+    #       self:
+    #         name.regexp: 'var|val|const'
+    #       child:
+    #         name.regexp: 'var|val|const'
+    #     action:
+    #       fail: "Validation failed due to nested qualifiers"
+
+
+    downwards:
+      - name: Rewrite qualifiers
+        match:
+          self:
+            name: var
+        action:
+          sequence:
+            - assert:
+                must:
+                  child:
+                    name: id
+                  message: "var was not followed by an identifier"
+            - childAction:
+                replaceValue:
+                  key: qualifier
+                  with: var
+            - replaceByChild: 0
+
+      - name: Rewrite qualifiers
+        match:
+          self:
+            name: val
+        action:
+          sequence:
+            - assert:
+                must:
+                  child:
+                    name: id
+                  message: "val was not followed by an identifier"
+            - childAction:
+                replaceValue:
+                  key: qualifier
+                  with: val
+            - replaceByChild: 0
+
+      - name: Rewrite qualifiers
+        match:
+          self:
+            name: const
+        action:
+          sequence:
+            - assert:
+                must:
+                  child:
+                    name: id
+                message: "const was not followed by an identifier"
+            - childAction:
+                replaceValue:
+                  key: qualifier
+                  with: const
+            - replaceByChild: 0
+

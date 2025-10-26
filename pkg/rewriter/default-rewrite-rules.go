@@ -54,6 +54,17 @@ passes:
                 key: sign
                 values: ["+", "-"]
 
+      - name: Operator to Syscall
+        match:
+          self:
+            name: operator
+            key: name
+            value.regexp: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
+            count: 2
+        action:
+          replaceName:
+            with: syscall
+
       - name: Change ':=' to bind (POP)
         match:
           self:
@@ -86,17 +97,6 @@ passes:
         action:
           replaceName:
             with: update
-
-      - name: Operator to Syscall
-        match:
-          self:
-            name: operator
-            key: name
-            matches: "[-+*/<>]|==|<=|>=|\\.\\.[<=]"
-            count: 2
-        action:
-          replaceName:
-            with: syscall
 
       - name: Fuse let parts
         match:
@@ -318,26 +318,74 @@ passes:
             with: seq
 
     upwards:
-    - name: Inline nested sequences
-      match:
-        self:
-          name: seq
-        child:
-          name: seq
-      action:
-        inlineChild: true
-      repeatOnSuccess: true
+      - name: Inline nested sequences
+        match:
+          self:
+            name: seq
+          child:
+            name: seq
+        action:
+          inlineChild: true
+        repeatOnSuccess: true
 
-    - name: seq-1
-      match:
-        self:
-          name: seq
-          count: 1
-      action:
-        replaceByChild: 0
-      onSuccess: Inline nested sequences
+      - name: seq-1
+        match:
+          self:
+            name: seq
+            count: 1
+        action:
+          replaceByChild: 0
+        onSuccess: Inline nested sequences
 
-  - name: Pass 5, Validate
+  - name: Pass 5, qualifiers
+    singlePass: true
+    downwards:
+
+      - name: Rewrite qualifiers
+        match:
+          self:
+            name: var
+            count: 1
+          child:
+            name: id
+        action:
+          sequence:
+            - childAction:
+                replaceValue:
+                  key: qualifier
+                  with: var
+            - replaceByChild: 0
+
+      - name: Rewrite qualifiers
+        match:
+          self:
+            name: val
+          child:
+            name: id
+        action:
+          sequence:
+            - childAction:
+                replaceValue:
+                  key: qualifier
+                  with: val
+            - replaceByChild: 0
+
+      - name: Rewrite qualifiers
+        match:
+          self:
+            name: const
+          child:
+            name: id
+        action:
+          sequence:
+            - childAction:
+                replaceValue:
+                  key: qualifier
+                  with: const
+            - replaceByChild: 0
+
+
+  - name: Last pass, Validate
     optional: true
     singlePass: true
     downwards:
