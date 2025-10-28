@@ -1,0 +1,1 @@
+def K(x) =>> fn y =>> x endfn enddef
