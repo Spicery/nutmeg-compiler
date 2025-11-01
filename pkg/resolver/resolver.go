@@ -16,14 +16,30 @@ const (
 	InnerScope  ScopeType = "inner" // Inner local scope.
 )
 
+const (
+	NoOption        = "no"
+	VarOption       = "var"
+	ConstOption     = "const"
+	ScopeOption     = "scope"
+	LastOption      = "last"
+	QualifierOption = "qualifier"
+)
+
+const (
+	ValueVar   = "var"
+	ValueConst = "const"
+)
+
 // IdentifierInfo holds information about a resolved identifier.
 type IdentifierInfo struct {
-	Name         string    // The identifier name.
-	UniqueID     uint64    // Unique identifier across all scopes.
-	DefDynLevel  int       // Dynamic level where defined.
-	ScopeType    ScopeType // The scope level (global, outer, inner).
-	IsAssignable bool      // Whether this identifier can be assigned to.
-	IsConst      bool      // Whether this is a const binding.
+	Name          string       // The identifier name.
+	UniqueID      uint64       // Unique identifier across all scopes.
+	DefDynLevel   int          // Dynamic level where defined.
+	ScopeType     ScopeType    // The scope level (global, outer, inner).
+	IsAssignable  bool         // Whether this identifier can be assigned to.
+	IsConst       bool         // Whether this is a const binding.
+	LastReference *common.Node // The position of the last reference in the AST traversal.
+	DefiningScope *Scope       // The scope where this identifier is defined.
 }
 
 // Scope represents a single scope level in the scope stack.
@@ -33,10 +49,11 @@ type Scope struct {
 	Identifiers  map[string]*IdentifierInfo // Maps identifier names to their metadata.
 	Parent       *Scope                     // Parent scope for lookups.
 	IsDynamic    bool                       // True if this is a dynamic scope (def, fn), false if lexical (if, for, let).
+	Node         *common.Node               // The AST node that introduced this scope.
 }
 
 // NewChildScope creates a new child scope of the current scope.
-func (s *Scope) NewChildScope(isDynamic bool) *Scope {
+func (s *Scope) NewChildScope(isDynamic bool, node *common.Node) *Scope {
 	dynamicLevel := s.DynamicLevel
 	if isDynamic {
 		dynamicLevel++
@@ -47,6 +64,7 @@ func (s *Scope) NewChildScope(isDynamic bool) *Scope {
 		Identifiers:  make(map[string]*IdentifierInfo),
 		Parent:       s,
 		IsDynamic:    isDynamic,
+		Node:         node,
 	}
 }
 
@@ -141,22 +159,39 @@ func (r *Resolver) handleBind(node *common.Node) error {
 // Structure: def -> [apply(f, x), body]
 // The apply node contains the function name and parameters.
 func (r *Resolver) handleDef(node *common.Node) error {
-	// Enter a new dynamic scope.
-	r.currentScope = r.currentScope.NewChildScope(true)
+	if len(node.Children) != 2 {
+		return fmt.Errorf("invalid def node structure")
+	}
 
-	// Extract function name and parameters from the first child (apply node).
-	if len(node.Children) > 0 && node.Children[0].Name == "apply" {
+	// Declare the identifier in the current scope.
+	if node.Children[0].Name == "apply" {
 		applyNode := node.Children[0]
 		// First child of apply is the function name (defining occurrence).
 		if len(applyNode.Children) > 0 && applyNode.Children[0].Name == "id" {
-			r.defineIdentifier(applyNode.Children[0])
+			info := r.defineIdentifier(applyNode.Children[0])
+			if info.ScopeType == GlobalScope {
+				info.IsAssignable = false
+				info.IsConst = true
+			}
 		}
+	} else {
+		return fmt.Errorf("unimplemented: first child must be apply")
+	}
+
+	// Enter a new dynamic scope.
+	r.currentScope = r.currentScope.NewChildScope(true, node)
+
+	// Extract function name and parameters from the first child (apply node).
+	if node.Children[0].Name == "apply" {
+		applyNode := node.Children[0]
 		// Remaining children of apply are parameters (defining occurrences).
 		for i := 1; i < len(applyNode.Children); i++ {
 			if applyNode.Children[i].Name == "id" {
 				r.defineIdentifier(applyNode.Children[i])
 			}
 		}
+	} else {
+		return fmt.Errorf("unimplemented: first child must be apply")
 	}
 
 	// Traverse remaining children (body of the function), skipping the first (apply).
@@ -173,7 +208,7 @@ func (r *Resolver) handleDef(node *common.Node) error {
 // Structure for anonymous fn: fn -> [params..., body]
 func (r *Resolver) handleFnScope(node *common.Node) error {
 	// Enter a new dynamic scope.
-	r.currentScope = r.currentScope.NewChildScope(true)
+	r.currentScope = r.currentScope.NewChildScope(true, node)
 	fmt.Println("Entering fn scope, level:", r.currentScope.Level, "dynamic level:", r.currentScope.DynamicLevel)
 
 	// If the fn has a name (first child is an id), define it in the function's own scope
@@ -242,7 +277,7 @@ func (r *Resolver) extractFnInfo(node *common.Node) (*string, []*common.Node, er
 // handleLexicalScope processes nodes that introduce a lexical scope (let, if, for).
 func (r *Resolver) handleLexicalScope(node *common.Node) error {
 	// Enter a new lexical scope.
-	r.currentScope = r.currentScope.NewChildScope(false)
+	r.currentScope = r.currentScope.NewChildScope(false, node)
 
 	// TODO: Extract parameters/definitions for let, handle if/for structure.
 	// This will depend on the specific structure of these nodes.
@@ -271,7 +306,9 @@ func (r *Resolver) handleIdentifier(node *common.Node) error {
 	// Look up the identifier to ensure it's registered (may be undefined).
 	// This has the side effect of registering undefined identifiers as global.
 	info, _ := r.lookupIdentifier(name)
-	node.Options["no"] = fmt.Sprintf("%d", info.UniqueID)
+	node.Options[NoOption] = fmt.Sprintf("%d", info.UniqueID)
+	// Update the last reference since we're traversing in order.
+	info.LastReference = node
 	return nil
 }
 
@@ -288,18 +325,22 @@ func (r *Resolver) NewGlobalIdentifierInfo(name string) *IdentifierInfo {
 	uniqueID := r.nextID
 	r.nextID++
 	info := r.globalScope.NewIdentifierInfo(name, uniqueID)
+	info.IsAssignable = false
+	info.IsConst = false
 	r.idInfo[uniqueID] = info
 	return info
 }
 
 func (s *Scope) NewIdentifierInfo(name string, uniqueID uint64) *IdentifierInfo {
 	info := &IdentifierInfo{
-		Name:         name,
-		UniqueID:     uniqueID,
-		DefDynLevel:  s.DynamicLevel,
-		ScopeType:    s.getInitialScopeType(),
-		IsAssignable: false, // TODO: Will be set based on var vs const binding.
-		IsConst:      false, // TODO: Will be set based on binding type.
+		Name:          name,
+		UniqueID:      uniqueID,
+		DefDynLevel:   s.DynamicLevel,
+		ScopeType:     s.getInitialScopeType(),
+		IsAssignable:  false, // TODO: Will be set based on var vs const binding.
+		IsConst:       false, // TODO: Will be set based on binding type.
+		LastReference: nil,   // Will be updated as identifier is referenced.
+		DefiningScope: s,     // Store the scope where this identifier is defined.
 	}
 	s.Identifiers[name] = info
 	return info
@@ -307,18 +348,25 @@ func (s *Scope) NewIdentifierInfo(name string, uniqueID uint64) *IdentifierInfo 
 
 // defineIdentifier defines a new identifier in the current scope.
 // First pass only - collects information but does not annotate nodes.
-func (r *Resolver) defineIdentifier(node *common.Node) {
+func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 	if node.Name != "id" {
-		return
+		return nil
 	}
 
 	name := getIdentifierName(node)
 	if name == "" {
-		return
+		return nil
 	}
 
 	// Create and store metadata for this identifier.
-	r.NewIdentifierInfo(name)
+	info := r.NewIdentifierInfo(name)
+	q, ok := node.Options[QualifierOption]
+	if ok {
+		info.IsAssignable = (q == ValueVar)
+		info.IsConst = (q == ValueConst)
+	}
+	node.Options[NoOption] = fmt.Sprintf("%d", info.UniqueID)
+	return info
 }
 
 func (r *Resolver) defineIdentifierByName(name string) {
@@ -329,27 +377,46 @@ func (r *Resolver) defineIdentifierByName(name string) {
 // annotate performs the second pass traversal to annotate all nodes with resolution information.
 // This re-traverses the tree with scope tracking to properly annotate each identifier.
 func (r *Resolver) annotate(node *common.Node) {
-	if node != nil {
-		v, ok := node.Options["no"]
-		if ok {
-			fmt.Println("Annotating node:", node.Name, "with no =", v)
-			no, err := strconv.ParseUint(v, 10, 64)
-			if err == nil {
-				fmt.Println("Parsed no =", no)
-				info := r.idInfo[no]
-				fmt.Println("Identifier info:", info)
-				if info != nil {
-					fmt.Println("Found identifier info:", info)
-					node.Options["var"] = fmt.Sprintf("%t", info.IsAssignable)
-					node.Options["const"] = fmt.Sprintf("%t", info.IsConst)
-					node.Options["scope"] = string(info.ScopeType)
-				}
-			}
+	switch node.Name {
+	case common.NameIdentifier:
+		info := r.getIdentifierInfo(node)
+
+		node.Options[VarOption] = fmt.Sprintf("%t", info.IsAssignable)
+		node.Options[ConstOption] = fmt.Sprintf("%t", info.IsConst)
+		node.Options[ScopeOption] = string(info.ScopeType)
+		// Check if this is the last reference to this identifier
+		if info.LastReference == node {
+			node.Options[LastOption] = "true"
 		}
 	}
+
 	for _, child := range node.Children {
 		r.annotate(child)
 	}
+}
+
+func (r *Resolver) getIdentifierInfo(node *common.Node) *IdentifierInfo {
+	no := getNumberOption(node, NoOption)
+	info := r.idInfo[no]
+	if info == nil {
+		panic(fmt.Sprintf("no identifier info for node with no=%d", no))
+	}
+	return info
+}
+
+func getNumberOption(node *common.Node, key string) uint64 {
+	if node == nil {
+		panic("nil node")
+	}
+	value, ok := node.Options[key]
+	if !ok {
+		panic(fmt.Sprintf("missing option '%s' in node '%s'", key, node.Name))
+	}
+	no, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		panic(fmt.Sprintf("invalid no option '%s' in node '%s'", key, node.Name))
+	}
+	return no
 }
 
 // getIdentifierName extracts the identifier name from a node.
