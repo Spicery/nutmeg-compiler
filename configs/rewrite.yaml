@@ -391,7 +391,7 @@ passes:
             - replaceName:
                 with: bind
             - replaceValue:
-                key: shadowless
+                key: dontshadow
                 with: "true"
             - inlineChild: true
             - newNodeChild:
