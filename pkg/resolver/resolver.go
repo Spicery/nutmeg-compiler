@@ -50,6 +50,7 @@ type Scope struct {
 	Parent       *Scope                     // Parent scope for lookups.
 	IsDynamic    bool                       // True if this is a dynamic scope (def, fn), false if lexical (if, for, let).
 	Node         *common.Node               // The AST node that introduced this scope.
+	Captured     map[uint64]*IdentifierInfo // Identifiers captured from outer scopes.
 }
 
 // NewChildScope creates a new child scope of the current scope.
@@ -58,7 +59,7 @@ func (s *Scope) NewChildScope(isDynamic bool, node *common.Node) *Scope {
 	if isDynamic {
 		dynamicLevel++
 	}
-	return &Scope{
+	scope := &Scope{
 		Level:        s.Level + 1,
 		DynamicLevel: dynamicLevel,
 		Identifiers:  make(map[string]*IdentifierInfo),
@@ -66,6 +67,14 @@ func (s *Scope) NewChildScope(isDynamic bool, node *common.Node) *Scope {
 		IsDynamic:    isDynamic,
 		Node:         node,
 	}
+	if isDynamic {
+		scope.Captured = make(map[uint64]*IdentifierInfo)
+	}
+	return scope
+}
+
+func (s *Scope) isClosureScope() bool {
+	return s.IsDynamic && len(s.Captured) > 0
 }
 
 // Resolver performs identifier resolution on a Nutmeg AST.
@@ -74,6 +83,7 @@ type Resolver struct {
 	nextID       uint64                     // Next available unique ID.
 	globalScope  *Scope                     // The global scope.
 	idInfo       map[uint64]*IdentifierInfo // Metadata for each identifier name.
+	Closures     []*Scope                   // List of closure scopes encountered.
 }
 
 // NewResolver creates a new resolver instance.
@@ -84,12 +94,15 @@ func NewResolver() *Resolver {
 		Identifiers:  make(map[string]*IdentifierInfo),
 		Parent:       nil,
 		IsDynamic:    false, // Global scope is lexical.
+		Node:         nil,
+		Captured:     nil,
 	}
 	return &Resolver{
 		currentScope: globalScope,
 		globalScope:  globalScope,
 		nextID:       0, // Start IDs at 0.
 		idInfo:       make(map[uint64]*IdentifierInfo),
+		Closures:     []*Scope{},
 	}
 }
 
@@ -105,6 +118,13 @@ func (r *Resolver) Resolve(root *common.Node) error {
 
 	// Second pass: annotate all nodes
 	r.annotate(root)
+
+	for _, closureScope := range r.Closures {
+		fmt.Println("CLOSURE SCOPE at level:", closureScope.Level, "dynamic level:", closureScope.DynamicLevel)
+		for _, info := range closureScope.Captured {
+			fmt.Println("  Captured identifier:", info.Name, "unique ID:", info.UniqueID)
+		}
+	}
 
 	return nil
 }
@@ -431,7 +451,7 @@ func getIdentifierName(node *common.Node) string {
 // lookupIdentifier searches for an identifier in the scope chain.
 // Returns (*IdentifierInfo, definingScope).
 func (r *Resolver) lookupIdentifier(name string) (*IdentifierInfo, *Scope) {
-	info, scope := r.currentScope.lookupIdentifier(name)
+	info, scope := r.currentScope.lookupIdentifier(name, r)
 	if info != nil {
 		return info, scope
 	}
@@ -440,15 +460,16 @@ func (r *Resolver) lookupIdentifier(name string) (*IdentifierInfo, *Scope) {
 	return info, r.globalScope
 }
 
-func (scope *Scope) lookupIdentifier(name string) (*IdentifierInfo, *Scope) {
+func (scope *Scope) lookupIdentifier(name string, r *Resolver) (*IdentifierInfo, *Scope) {
 	fmt.Println("Looking up identifier:", name, "in scope level:", scope.Level, "dynamic level:", scope.DynamicLevel)
 	s := scope
 	for s != nil {
-		if info, found := s.Identifiers[name]; found {
-			if info != nil && info.ScopeType == InnerScope {
-				fmt.Println(name, "s.DynamicLevel:", s.DynamicLevel, "info.DefDynLevel:", info.DefDynLevel)
-				if scope.DynamicLevel != info.DefDynLevel {
+		if info, found := s.Identifiers[name]; found && info != nil {
+			if info.ScopeType == InnerScope {
+				fmt.Println(name, "scope.DynamicLevel:", scope.DynamicLevel, "info.DefDynLevel:", info.DefDynLevel, "isDynamic:", scope.IsDynamic)
+				if scope.DynamicLevel != info.DefDynLevel && info.DefDynLevel != 0 {
 					info.ScopeType = OuterScope
+					scope.captureOuterIdentifier(info, r)
 				}
 			}
 			return info, s
@@ -456,6 +477,33 @@ func (scope *Scope) lookupIdentifier(name string) (*IdentifierInfo, *Scope) {
 		s = s.Parent
 	}
 	return nil, nil
+}
+
+func (scope *Scope) captureOuterIdentifier(info *IdentifierInfo, r *Resolver) {
+	fmt.Println("Capturing outer identifier:", info.Name, "defined at dynamic level:", info.DefDynLevel)
+	fmt.Println("Current scope level:", scope.Level, "dynamic level:", scope.DynamicLevel, "isDynamic:", scope.IsDynamic)
+	s := scope
+	deflevel := info.DefDynLevel
+	fmt.Println("s != nil", s != nil, "s.DynamicLevel > deflevel", s.DynamicLevel > deflevel)
+	for s != nil && s.DynamicLevel > deflevel {
+		fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
+		if s.IsDynamic {
+			s.captureIdentifier(info, r)
+		}
+		s = s.Parent
+	}
+}
+
+func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) {
+	fmt.Println("Capturing in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "identifier:", info.Name)
+	if s.Captured[info.UniqueID] == nil {
+		if s.Captured == nil {
+			s.Captured = make(map[uint64]*IdentifierInfo)
+		}
+		s.Captured[info.UniqueID] = info
+		r.Closures = append(r.Closures, s)
+		fmt.Println("Captured identifier:", info.Name, "in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isClosure:", s.isClosureScope())
+	}
 }
 
 // getInitialScopeType returns the scope type of the current scope.
