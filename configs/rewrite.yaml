@@ -33,7 +33,7 @@ passes:
                 offset: 1
                 length: 2
 
-      - name: Rename arguments to apply
+      - name: Rename apply/delimited to apply/arguments
         match:
           self:
             name: apply
@@ -308,7 +308,7 @@ passes:
             src: child
             from: value
 
-      - name: canonical Fn
+      - name: Normalise fn, delimited->arguments
         match:
           self:
             name: part
@@ -323,6 +323,22 @@ passes:
           childAction:
             replaceName:
               with: arguments
+
+      - name: Normalise fn, id->arguments
+        match:
+          self:
+            name: part
+            key: keyword
+            value: fn
+            count: 1
+          child:
+            name: id
+            key: name
+        action:
+          newNodeChild:
+            name: arguments
+            offset: 0
+            length: 1
 
       - name: Rename parts to seq
         match:
@@ -361,6 +377,27 @@ passes:
         action:
           replaceByChild: 0
         onSuccess: Inline nested sequences
+
+      - name: def->bind
+        match:
+          self:
+            name: def
+            count: 2
+          child:
+            name: apply
+            count: 2
+        action:
+          sequence:
+            - replaceName:
+                with: bind
+            - replaceValue:
+                key: shadowless
+                with: "true"
+            - inlineChild: true
+            - newNodeChild:
+                name: fn
+                offset: 1
+                length: 2
 
   - name: Pass 5, qualifiers
     singlePass: true
@@ -554,16 +591,6 @@ passes:
         match:
           self:
             name: apply
-        action:
-          assert:
-            self:
-              count: 2
-        breakOnSuccess: true
-
-      - name: Def
-        match:
-          self:
-            name: def
         action:
           assert:
             self:

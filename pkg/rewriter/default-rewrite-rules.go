@@ -30,13 +30,13 @@ passes:
             - inlineChild: true
             - permuteChildren: [0, 1]
             - newNodeChild:
-                name: delimited
+                name: arguments
                 key: kind
                 value: parentheses
                 offset: 1
                 length: 2
 
-      - name: Rename arguments to apply
+      - name: Rename apply/delimited to apply/arguments
         match:
           self:
             name: apply
@@ -297,6 +297,7 @@ passes:
 
   - name: Pass 4, convert forms to seq
     downwards:
+
       - name: Rename form using keyword
         match:
           self:
@@ -309,6 +310,38 @@ passes:
           replaceName:
             src: child
             from: value
+
+      - name: Normalise fn, delimited->arguments
+        match:
+          self:
+            name: part
+            key: keyword
+            value: fn
+          child:
+            name: delimited
+            key: kind
+            value: parentheses
+            siblingPosition: 0
+        action:
+          childAction:
+            replaceName:
+              with: arguments
+
+      - name: Normalise fn, id->arguments
+        match:
+          self:
+            name: part
+            key: keyword
+            value: fn
+            count: 1
+          child:
+            name: id
+            key: name
+        action:
+          newNodeChild:
+            name: arguments
+            offset: 0
+            length: 1
 
       - name: Rename parts to seq
         match:
@@ -347,6 +380,24 @@ passes:
         action:
           replaceByChild: 0
         onSuccess: Inline nested sequences
+
+      - name: def->bind
+        match:
+          self:
+            name: def
+            count: 2
+          child:
+            name: apply
+            count: 2
+        action:
+          sequence:
+            - replaceName:
+                with: bind
+            - inlineChild: true
+            - newNodeChild:
+                name: fn
+                offset: 1
+                length: 2
 
   - name: Pass 5, qualifiers
     singlePass: true
@@ -403,7 +454,6 @@ passes:
             name: val
         action:
           fail: "Qualifier was not followed by an identifier"
-
 
   - name: Last pass, Validate
     optional: true
@@ -547,16 +597,6 @@ passes:
               count: 2
         breakOnSuccess: true
 
-      - name: Def
-        match:
-          self:
-            name: def
-        action:
-          assert:
-            self:
-              count: 2
-        breakOnSuccess: true
-
       - name: Let
         match:
           self:
@@ -571,9 +611,11 @@ passes:
           self:
             name: fn
         action:
-          assert:
-            self:
-              count: 2
+          sequence:
+            - assert:
+                self:
+                  count: 2
+            - clearOptions: true
         breakOnSuccess: true
 
       - name: Arguments
@@ -581,7 +623,7 @@ passes:
           self:
             name: arguments
         action:
-          continue: true
+          clearOptions: true
         breakOnSuccess: true
 
       - name: Fail Validation
