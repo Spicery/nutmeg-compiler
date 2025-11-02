@@ -136,28 +136,38 @@ func main() {
 
 			// Check if we've hit the iteration limit.
 			if maxRewrites > 0 && iteration > maxRewrites {
-				fmt.Fprintf(os.Stderr, "=== Stopped: reached maximum iterations (%d) ===\n", maxRewrites)
+				if debug {
+					fmt.Fprintf(os.Stderr, "=== Stopped: reached maximum iterations (%d) ===\n", maxRewrites)
+				}
 				break
 			}
 
-			fmt.Fprintf(os.Stderr, "=== Rewrite iteration %d ===\n", iteration)
+			if debug {
+				fmt.Fprintf(os.Stderr, "=== Rewrite iteration %d ===\n", iteration)
+			}
 
 			var changed bool
 			node, changed = r.Rewrite(node)
 
 			if changed {
-				fmt.Fprintln(os.Stderr, "Rewrite modified the tree - continuing")
+				if debug {
+					fmt.Fprintln(os.Stderr, "=== Rewrite modified the tree - continuing ===")
+				}
 			} else {
-				fmt.Fprintln(os.Stderr, "Rewrite made no changes - fixed point reached")
+				if debug {
+					fmt.Fprintln(os.Stderr, "=== Rewrite made no changes - fixed point reached ===")
+				}
 				reachedFixedPoint = true
 				break
 			}
 		}
 
-		if reachedFixedPoint {
-			fmt.Fprintf(os.Stderr, "=== Completed after %d iteration(s) ===\n", iteration)
-		} else {
-			fmt.Fprintf(os.Stderr, "=== Warning: Did not reach fixed point after %d iteration(s) ===\n", iteration-1)
+		if debug {
+			if reachedFixedPoint {
+				fmt.Fprintf(os.Stderr, "=== Completed after %d iteration(s) ===\n", iteration)
+			} else {
+				fmt.Fprintf(os.Stderr, "=== Warning: Did not reach fixed point after %d iteration(s) ===\n", iteration-1)
+			}
 		}
 	}
 

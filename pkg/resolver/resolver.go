@@ -7,15 +7,6 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
-// ScopeType represents the scope level of an identifier.
-type ScopeType string
-
-const (
-	GlobalScope ScopeType = "global"
-	OuterScope  ScopeType = "outer" // Outer local scope.
-	InnerScope  ScopeType = "inner" // Inner local scope.
-)
-
 const (
 	NoOption        = "no"
 	VarOption       = "var"
@@ -29,53 +20,6 @@ const (
 	ValueVar   = "var"
 	ValueConst = "const"
 )
-
-// IdentifierInfo holds information about a resolved identifier.
-type IdentifierInfo struct {
-	Name          string       // The identifier name.
-	UniqueID      uint64       // Unique identifier across all scopes.
-	DefDynLevel   int          // Dynamic level where defined.
-	ScopeType     ScopeType    // The scope level (global, outer, inner).
-	IsAssignable  bool         // Whether this identifier can be assigned to.
-	IsConst       bool         // Whether this is a const binding.
-	LastReference *common.Node // The position of the last reference in the AST traversal.
-	DefiningScope *Scope       // The scope where this identifier is defined.
-}
-
-// Scope represents a single scope level in the scope stack.
-type Scope struct {
-	Level        int                        // Nesting level (0 = global).
-	DynamicLevel int                        // Nesting level counting only dynamic scopes (0 = global).
-	Identifiers  map[string]*IdentifierInfo // Maps identifier names to their metadata.
-	Parent       *Scope                     // Parent scope for lookups.
-	IsDynamic    bool                       // True if this is a dynamic scope (def, fn), false if lexical (if, for, let).
-	Node         *common.Node               // The AST node that introduced this scope.
-	Captured     map[uint64]*IdentifierInfo // Identifiers captured from outer scopes.
-}
-
-// NewChildScope creates a new child scope of the current scope.
-func (s *Scope) NewChildScope(isDynamic bool, node *common.Node) *Scope {
-	dynamicLevel := s.DynamicLevel
-	if isDynamic {
-		dynamicLevel++
-	}
-	scope := &Scope{
-		Level:        s.Level + 1,
-		DynamicLevel: dynamicLevel,
-		Identifiers:  make(map[string]*IdentifierInfo),
-		Parent:       s,
-		IsDynamic:    isDynamic,
-		Node:         node,
-	}
-	if isDynamic {
-		scope.Captured = make(map[uint64]*IdentifierInfo)
-	}
-	return scope
-}
-
-func (s *Scope) isClosureScope() bool {
-	return s.IsDynamic && len(s.Captured) > 0
-}
 
 // Resolver performs identifier resolution on a Nutmeg AST.
 type Resolver struct {
@@ -204,10 +148,11 @@ func (r *Resolver) handleDef(node *common.Node) error {
 	// Extract function name and parameters from the first child (apply node).
 	if node.Children[0].Name == "apply" {
 		applyNode := node.Children[0]
-		// Remaining children of apply are parameters (defining occurrences).
-		for i := 1; i < len(applyNode.Children); i++ {
-			if applyNode.Children[i].Name == "id" {
-				r.defineIdentifier(applyNode.Children[i])
+		// Second child is an arguments node containing parameters (defining occurrences).
+		argsNode := applyNode.Children[1]
+		for _, arg := range argsNode.Children {
+			if arg.Name == "id" {
+				r.defineIdentifier(arg)
 			}
 		}
 	} else {
@@ -351,21 +296,6 @@ func (r *Resolver) NewGlobalIdentifierInfo(name string) *IdentifierInfo {
 	return info
 }
 
-func (s *Scope) NewIdentifierInfo(name string, uniqueID uint64) *IdentifierInfo {
-	info := &IdentifierInfo{
-		Name:          name,
-		UniqueID:      uniqueID,
-		DefDynLevel:   s.DynamicLevel,
-		ScopeType:     s.getInitialScopeType(),
-		IsAssignable:  false, // TODO: Will be set based on var vs const binding.
-		IsConst:       false, // TODO: Will be set based on binding type.
-		LastReference: nil,   // Will be updated as identifier is referenced.
-		DefiningScope: s,     // Store the scope where this identifier is defined.
-	}
-	s.Identifiers[name] = info
-	return info
-}
-
 // defineIdentifier defines a new identifier in the current scope.
 // First pass only - collects information but does not annotate nodes.
 func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
@@ -491,27 +421,5 @@ func (scope *Scope) captureOuterIdentifier(info *IdentifierInfo, r *Resolver) {
 			s.captureIdentifier(info, r)
 		}
 		s = s.Parent
-	}
-}
-
-func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) {
-	fmt.Println("Capturing in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "identifier:", info.Name)
-	if s.Captured[info.UniqueID] == nil {
-		if s.Captured == nil {
-			s.Captured = make(map[uint64]*IdentifierInfo)
-		}
-		s.Captured[info.UniqueID] = info
-		r.Closures = append(r.Closures, s)
-		fmt.Println("Captured identifier:", info.Name, "in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isClosure:", s.isClosureScope())
-	}
-}
-
-// getInitialScopeType returns the scope type of the current scope.
-func (s *Scope) getInitialScopeType() ScopeType {
-	switch s.Level {
-	case 0:
-		return GlobalScope
-	default:
-		return InnerScope
 	}
 }

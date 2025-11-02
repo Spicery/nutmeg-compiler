@@ -27,11 +27,22 @@ passes:
             - inlineChild: true
             - permuteChildren: [0, 1]
             - newNodeChild:
-                name: delimited
+                name: arguments
                 key: kind
                 value: parentheses
                 offset: 1
                 length: 2
+
+      - name: Rename arguments to apply
+        match:
+          self:
+            name: apply
+          child:
+            name: delimited
+        action:
+          childAction:
+            replaceName:
+              with: arguments
 
       - name: Rename negation as seq and toggle sign of number
         match:
@@ -283,6 +294,7 @@ passes:
 
   - name: Pass 4, convert forms to seq
     downwards:
+
       - name: Rename form using keyword
         match:
           self:
@@ -295,6 +307,22 @@ passes:
           replaceName:
             src: child
             from: value
+
+      - name: canonical Fn
+        match:
+          self:
+            name: part
+            key: keyword
+            value: fn
+          child:
+            name: delimited
+            key: kind
+            value: parentheses
+            siblingPosition: 0
+        action:
+          childAction:
+            replaceName:
+              with: arguments
 
       - name: Rename parts to seq
         match:
@@ -336,6 +364,7 @@ passes:
 
   - name: Pass 5, qualifiers
     singlePass: true
+
     downwards:
       - name: Rewrite qualifiers
         match:
@@ -385,10 +414,9 @@ passes:
       - name: Validate qualifiers
         match:
           self:
-            name.regexp: 'var|val|const'
+            name: val
         action:
           fail: "Qualifier was not followed by an identifier"
-
 
   - name: Last pass, Validate
     optional: true
@@ -556,9 +584,19 @@ passes:
           self:
             name: fn
         action:
-          assert:
-            self:
-              count: 2
+          sequence:
+            - assert:
+                self:
+                  count: 2
+            - clearOptions: true
+        breakOnSuccess: true
+
+      - name: Arguments
+        match:
+          self:
+            name: arguments
+        action:
+          clearOptions: true
         breakOnSuccess: true
 
       - name: Fail Validation

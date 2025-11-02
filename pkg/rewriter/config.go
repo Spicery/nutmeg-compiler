@@ -51,6 +51,7 @@ type ActionConfig struct {
 	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
 	PermuteChildren    []int               `yaml:"permuteChildren,omitempty"`
 	Continue           bool                `yaml:"continue,omitempty"`
+	ClearOptions       bool                `yaml:"clearOptions,omitempty"`
 	Fail               *string             `yaml:"fail,omitempty"`
 	Assert             *Pattern            `yaml:"assert,omitempty"`
 }
@@ -139,6 +140,9 @@ func (ac ActionConfig) Validate() error {
 		count++
 	}
 	if ac.Continue {
+		count++
+	}
+	if ac.ClearOptions {
 		count++
 	}
 	if ac.Fail != nil {
@@ -262,6 +266,9 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	}
 	if ac.Continue {
 		return &NullAction{}, nil
+	}
+	if ac.ClearOptions {
+		return &ClearOptionsAction{}, nil
 	}
 	if ac.Fail != nil {
 		return &FailAction{Message: *ac.Fail}, nil

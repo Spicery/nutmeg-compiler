@@ -36,6 +36,17 @@ passes:
                 offset: 1
                 length: 2
 
+      - name: Rename arguments to apply
+        match:
+          self:
+            name: apply
+          child:
+            name: delimited
+        action:
+          childAction:
+            replaceName:
+              with: arguments
+
       - name: Rename negation as seq and toggle sign of number
         match:
           self:
@@ -563,6 +574,14 @@ passes:
           assert:
             self:
               count: 2
+        breakOnSuccess: true
+
+      - name: Arguments
+        match:
+          self:
+            name: arguments
+        action:
+          continue: true
         breakOnSuccess: true
 
       - name: Fail Validation

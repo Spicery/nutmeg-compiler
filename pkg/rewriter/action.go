@@ -18,6 +18,17 @@ type Action interface {
 /// Actions
 ////////////////////////////////////////////////////////////////////////////////
 
+type ClearOptionsAction struct {
+}
+
+func (a *ClearOptionsAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+	if node == nil {
+		return node, false
+	}
+	clear(node.Options)
+	return node, true
+}
+
 type NullAction struct {
 }
 
@@ -94,6 +105,7 @@ func (a *ReplaceNameWithAction) Apply(pattern *Pattern, childPosition int, node 
 	if node == nil {
 		return node, false
 	}
+	// fmt.Fprintf(os.Stderr, "      ReplaceNameWithAction: replacing name %s with %s\n", node.Name, a.With)
 	node.Name = a.With
 	return node, true
 }
