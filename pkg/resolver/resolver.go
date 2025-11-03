@@ -13,7 +13,7 @@ const (
 	ConstOption     = "const"
 	ScopeOption     = "scope"
 	LastOption      = "last"
-	ProtectedOption = "dontshadow"
+	ProtectedOption = "protected"
 )
 
 const (
@@ -322,6 +322,7 @@ func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 	}
 	q, ok = node.Options[ProtectedOption]
 	if ok {
+		fmt.Println("Setting protected option for identifier:", name, "to", q)
 		info.IsProtected = (q == "true")
 	}
 	node.Options[NoOption] = fmt.Sprintf("%d", info.UniqueID)
@@ -366,9 +367,16 @@ func (r *Resolver) annotate(node *common.Node) error {
 		if id.Name == common.NameIdentifier {
 			info := r.getIdentifierInfo(id)
 			if info.ScopeType != GlobalScope {
+				fmt.Printf("Checking scope chain for shadowing of: %s\n", info.Name)
 				// Scan the scope chain looking for prior definitions of the same identifier.
 				for s := r.currentScope; s != nil; s = s.Parent {
-					if prior, found := s.Identifiers[id.Name]; found && prior != nil {
+					fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
+					for _, prior := range s.Identifiers {
+						fmt.Println("Checking prior identifier:", prior.Name, prior.IsProtected)
+					}
+					prior, found := s.Identifiers[info.Name]
+					if found && prior != nil {
+						fmt.Println("FOUND PRIOR DEFINITION OF:", info.Name)
 						if prior.IsProtected {
 							return fmt.Errorf("trying to re-declare protected identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
 						}
@@ -393,7 +401,9 @@ func (r *Resolver) annotate(node *common.Node) error {
 		}
 	case common.NameUpdate:
 		// TODO: Implement IsUpdatable. This requires an analysis of the
-		// side-effects on each parameter of the function being invoked.
+		// side-effects on each parameter of the function being invoked. I do
+		// not think it is feasible to implement this without a more
+		// sophisticated control flow analysis.
 		return nil
 	}
 	return nil

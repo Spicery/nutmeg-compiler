@@ -393,6 +393,9 @@ passes:
           sequence:
             - replaceName:
                 with: bind
+            - replaceValue:
+                key: protected
+                with: "true"
             - inlineChild: true
             - newNodeChild:
                 name: fn

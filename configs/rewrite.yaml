@@ -380,6 +380,22 @@ passes:
 
       - name: def->bind
         match:
+          parent:
+            name: def
+            count: 2
+          self:
+            name: apply
+            count: 2
+          child:
+            name: id
+        action:
+          childAction:
+            replaceValue:
+              key: protected
+              with: "true"
+
+      - name: def->bind
+        match:
           self:
             name: def
             count: 2
@@ -390,9 +406,6 @@ passes:
           sequence:
             - replaceName:
                 with: bind
-            - replaceValue:
-                key: dontshadow
-                with: "true"
             - inlineChild: true
             - newNodeChild:
                 name: fn

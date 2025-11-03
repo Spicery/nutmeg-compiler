@@ -1,0 +1,4 @@
+def bad(x, y) =>>
+    bad := x - y
+    (bad * bad)
+enddef
