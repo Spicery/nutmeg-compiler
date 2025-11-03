@@ -367,16 +367,16 @@ func (r *Resolver) annotate(node *common.Node) error {
 		if id.Name == common.NameIdentifier {
 			info := r.getIdentifierInfo(id)
 			if info.ScopeType != GlobalScope {
-				fmt.Printf("Checking scope chain for shadowing of: %s\n", info.Name)
+				// fmt.Printf("Checking scope chain for shadowing of: %s\n", info.Name)
 				// Scan the scope chain looking for prior definitions of the same identifier.
 				for s := r.currentScope; s != nil; s = s.Parent {
-					fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
-					for _, prior := range s.Identifiers {
-						fmt.Println("Checking prior identifier:", prior.Name, prior.IsProtected)
-					}
+					// fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
+					// for _, prior := range s.Identifiers {
+					// 	fmt.Println("Checking prior identifier:", prior.Name, prior.IsProtected)
+					// }
 					prior, found := s.Identifiers[info.Name]
 					if found && prior != nil {
-						fmt.Println("FOUND PRIOR DEFINITION OF:", info.Name)
+						// fmt.Println("FOUND PRIOR DEFINITION OF:", info.Name)
 						if prior.IsProtected {
 							return fmt.Errorf("trying to re-declare protected identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
 						}
@@ -391,9 +391,9 @@ func (r *Resolver) annotate(node *common.Node) error {
 		id := node.Children[0]
 		if id.Name == common.NameIdentifier {
 			info := r.getIdentifierInfo(id)
-			fmt.Printf("Checking assignability of: %s, %t\n", info.Name, info.IsAssignable)
+			// fmt.Printf("Checking assignability of: %s, %t\n", info.Name, info.IsAssignable)
 			if !info.IsAssignable {
-				fmt.Println("THROWING ERROR")
+				// fmt.Println("THROWING ERROR")
 				return fmt.Errorf("assigning to non-assignable identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
 			}
 		} else {
@@ -474,13 +474,13 @@ func (scope *Scope) lookupIdentifier(name string, r *Resolver) (*IdentifierInfo,
 }
 
 func (scope *Scope) captureOuterIdentifier(info *IdentifierInfo, r *Resolver) {
-	fmt.Println("Capturing outer identifier:", info.Name, "defined at dynamic level:", info.DefDynLevel)
-	fmt.Println("Current scope level:", scope.Level, "dynamic level:", scope.DynamicLevel, "isDynamic:", scope.IsDynamic)
+	// fmt.Println("Capturing outer identifier:", info.Name, "defined at dynamic level:", info.DefDynLevel)
+	// fmt.Println("Current scope level:", scope.Level, "dynamic level:", scope.DynamicLevel, "isDynamic:", scope.IsDynamic)
 	s := scope
 	deflevel := info.DefDynLevel
-	fmt.Println("s != nil", s != nil, "s.DynamicLevel > deflevel", s.DynamicLevel > deflevel)
+	// fmt.Println("s != nil", s != nil, "s.DynamicLevel > deflevel", s.DynamicLevel > deflevel)
 	for s != nil && s.DynamicLevel > deflevel {
-		fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
+		// fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
 		if s.IsDynamic {
 			s.captureIdentifier(info, r)
 		}
