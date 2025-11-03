@@ -82,15 +82,15 @@ func (r *Resolver) traverse(node *common.Node) error {
 
 	// Handle different node types.
 	switch node.Name {
-	case "bind":
+	case common.NameBind:
 		return r.handleBind(node)
-	case "def":
+	case common.NameDef:
 		return r.handleDef(node)
-	case "fn":
+	case common.NameFn:
 		return r.handleFnScope(node)
-	case "let", "if", "for":
+	case common.NameLet, common.NameIf, common.NameFor:
 		return r.handleLexicalScope(node)
-	case "id":
+	case common.NameIdentifier:
 		return r.handleIdentifier(node)
 	default:
 		// For other nodes, just traverse children.
@@ -314,6 +314,7 @@ func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 	if ok {
 		info.IsAssignable = (q == ValueVar)
 		info.IsConst = (q == ValueConst)
+		info.IsShadowable = node.Options["dontshadow"] != "true"
 	}
 	node.Options[NoOption] = fmt.Sprintf("%d", info.UniqueID)
 	return info
@@ -327,6 +328,7 @@ func (r *Resolver) defineIdentifierByName(name string) {
 // annotate performs the second pass traversal to annotate all nodes with resolution information.
 // This re-traverses the tree with scope tracking to properly annotate each identifier.
 func (r *Resolver) annotate(node *common.Node) {
+	// Downwards pass
 	switch node.Name {
 	case common.NameIdentifier:
 		info := r.getIdentifierInfo(node)
@@ -340,8 +342,19 @@ func (r *Resolver) annotate(node *common.Node) {
 		}
 	}
 
+	// Recurse into children
 	for _, child := range node.Children {
 		r.annotate(child)
+	}
+
+	// Upwards pass
+	switch node.Name {
+	case common.NameBind:
+		// Implement IsShadowable.
+	case common.NameAssign:
+		// Implement IsAssignable.
+	case common.NameUpdate:
+		// Implement IsUpdatable.
 	}
 }
 
