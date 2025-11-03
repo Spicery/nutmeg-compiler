@@ -13,7 +13,7 @@ const (
 	ConstOption     = "const"
 	ScopeOption     = "scope"
 	LastOption      = "last"
-	QualifierOption = "qualifier"
+	ProtectedOption = "dontshadow"
 )
 
 const (
@@ -61,7 +61,9 @@ func (r *Resolver) Resolve(root *common.Node) error {
 	}
 
 	// Second pass: annotate all nodes
-	r.annotate(root)
+	if err := r.annotate(root); err != nil {
+		return err
+	}
 
 	for _, closureScope := range r.Closures {
 		fmt.Println("CLOSURE SCOPE at level:", closureScope.Level, "dynamic level:", closureScope.DynamicLevel)
@@ -310,11 +312,17 @@ func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 
 	// Create and store metadata for this identifier.
 	info := r.NewIdentifierInfo(name)
-	q, ok := node.Options[QualifierOption]
+	q, ok := node.Options[VarOption]
 	if ok {
-		info.IsAssignable = (q == ValueVar)
-		info.IsConst = (q == ValueConst)
-		info.IsShadowable = node.Options["dontshadow"] != "true"
+		info.IsAssignable = (q == "true")
+	}
+	q, ok = node.Options[ConstOption]
+	if ok {
+		info.IsConst = (q == "true")
+	}
+	q, ok = node.Options[ProtectedOption]
+	if ok {
+		info.IsProtected = (q == "true")
 	}
 	node.Options[NoOption] = fmt.Sprintf("%d", info.UniqueID)
 	return info
@@ -327,7 +335,7 @@ func (r *Resolver) defineIdentifierByName(name string) {
 
 // annotate performs the second pass traversal to annotate all nodes with resolution information.
 // This re-traverses the tree with scope tracking to properly annotate each identifier.
-func (r *Resolver) annotate(node *common.Node) {
+func (r *Resolver) annotate(node *common.Node) error {
 	// Downwards pass
 	switch node.Name {
 	case common.NameIdentifier:
@@ -344,18 +352,51 @@ func (r *Resolver) annotate(node *common.Node) {
 
 	// Recurse into children
 	for _, child := range node.Children {
-		r.annotate(child)
+		err := r.annotate(child)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Upwards pass
 	switch node.Name {
 	case common.NameBind:
 		// Implement IsShadowable.
+		id := node.Children[0]
+		if id.Name == common.NameIdentifier {
+			info := r.getIdentifierInfo(id)
+			if info.ScopeType != GlobalScope {
+				// Scan the scope chain looking for prior definitions of the same identifier.
+				for s := r.currentScope; s != nil; s = s.Parent {
+					if prior, found := s.Identifiers[id.Name]; found && prior != nil {
+						if prior.IsProtected {
+							return fmt.Errorf("trying to re-declare protected identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
+						}
+					}
+				}
+			}
+		} else {
+			return fmt.Errorf("invalid bind structure, at line %d, column %d", node.Span.StartLine, node.Span.StartColumn)
+		}
 	case common.NameAssign:
 		// Implement IsAssignable.
+		id := node.Children[0]
+		if id.Name == common.NameIdentifier {
+			info := r.getIdentifierInfo(id)
+			fmt.Printf("Checking assignability of: %s, %t\n", info.Name, info.IsAssignable)
+			if !info.IsAssignable {
+				fmt.Println("THROWING ERROR")
+				return fmt.Errorf("assigning to non-assignable identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
+			}
+		} else {
+			return fmt.Errorf("invalid assign node structure, at line %d, column %d", node.Span.StartLine, node.Span.StartColumn)
+		}
 	case common.NameUpdate:
-		// Implement IsUpdatable.
+		// TODO: Implement IsUpdatable. This requires an analysis of the
+		// side-effects on each parameter of the function being invoked.
+		return nil
 	}
+	return nil
 }
 
 func (r *Resolver) getIdentifierInfo(node *common.Node) *IdentifierInfo {
@@ -404,12 +445,12 @@ func (r *Resolver) lookupIdentifier(name string) (*IdentifierInfo, *Scope) {
 }
 
 func (scope *Scope) lookupIdentifier(name string, r *Resolver) (*IdentifierInfo, *Scope) {
-	fmt.Println("Looking up identifier:", name, "in scope level:", scope.Level, "dynamic level:", scope.DynamicLevel)
+	// fmt.Println("Looking up identifier:", name, "in scope level:", scope.Level, "dynamic level:", scope.DynamicLevel)
 	s := scope
 	for s != nil {
 		if info, found := s.Identifiers[name]; found && info != nil {
 			if info.ScopeType == InnerScope {
-				fmt.Println(name, "scope.DynamicLevel:", scope.DynamicLevel, "info.DefDynLevel:", info.DefDynLevel, "isDynamic:", scope.IsDynamic)
+				// fmt.Println(name, "scope.DynamicLevel:", scope.DynamicLevel, "info.DefDynLevel:", info.DefDynLevel, "isDynamic:", scope.IsDynamic)
 				if scope.DynamicLevel != info.DefDynLevel && info.DefDynLevel != 0 {
 					info.ScopeType = OuterScope
 					scope.captureOuterIdentifier(info, r)

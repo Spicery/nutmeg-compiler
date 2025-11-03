@@ -19,7 +19,7 @@ type IdentifierInfo struct {
 	ScopeType     ScopeType    // The scope level (global, outer, inner).
 	IsAssignable  bool         // Whether this identifier can be assigned to.
 	IsConst       bool         // Whether this is a const binding.
-	IsShadowable  bool         // Whether this identifier can be shadowed.
+	IsProtected   bool         // Whether this identifier can be shadowed.
 	LastReference *common.Node // The position of the last reference in the AST traversal.
 	DefiningScope *Scope       // The scope where this identifier is defined.
 }
