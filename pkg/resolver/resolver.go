@@ -51,7 +51,6 @@ func NewResolver() *Resolver {
 func (r *Resolver) Resolve(root *common.Node) error {
 	// First pass: collect identifier information
 	if err := r.traverse(root); err != nil {
-		fmt.Println(">>> Failing 3")
 		return err
 	}
 
@@ -112,16 +111,9 @@ func (r *Resolver) closureCaptures() {
 
 func renumberIdentifiersInNode(node *common.Node, renumber_str map[string]string) {
 	if node != nil && node.Name == common.NameIdentifier {
-
 		no := node.Options[common.OptionSerialNo]
-		serial_no, err := strconv.ParseUint(no, 10, 64)
-		if err == nil {
-
-			if new_no, found := renumber_str[no]; found {
-				node.Options[common.OptionSerialNo] = new_no
-			} else {
-				fmt.Println("Cannot find serial number in map: %d", serial_no)
-			}
+		if new_no, found := renumber_str[no]; found {
+			node.Options[common.OptionSerialNo] = new_no
 		}
 	}
 	// Renumber the node's identifier if it exists in the mapping.
@@ -150,15 +142,11 @@ func (r *Resolver) traverse(node *common.Node) error {
 		return r.handleLexicalScope(node)
 	case common.NameIdentifier:
 		err := r.handleIdentifier(node)
-		if err != nil {
-			fmt.Println(">>> Failing 2")
-		}
 		return err
 	default:
 		// For other nodes, just traverse children.
 		for _, child := range node.Children {
 			if err := r.traverse(child); err != nil {
-				fmt.Println(">>> Failing 4")
 				return err
 			}
 		}
@@ -178,7 +166,6 @@ func (r *Resolver) handleBind(node *common.Node) error {
 	for i := 1; i < len(node.Children); i++ {
 		err := r.traverse(node.Children[i])
 		if err != nil {
-			fmt.Println(">>> Failing 5")
 			return err
 		}
 	}
@@ -243,7 +230,6 @@ func (r *Resolver) handleDef(node *common.Node) error {
 func (r *Resolver) handleFnScope(node *common.Node) error {
 	// Enter a new dynamic scope.
 	r.currentScope = r.currentScope.NewChildScope(true, node)
-	fmt.Println("Entering fn scope, level:", r.currentScope.Level, "dynamic level:", r.currentScope.DynamicLevel)
 
 	// If the fn has a name (first child is an id), define it in the function's own scope
 	// for self-reference (e.g., fn factorial(n) =>> ... factorial(n-1) ...)
@@ -252,14 +238,10 @@ func (r *Resolver) handleFnScope(node *common.Node) error {
 		return err
 	}
 	if name != nil {
-		fmt.Println("Defining fn name in its own scope:", *name)
 		r.defineIdentifierByName(*name)
 	}
-	if len(params) == 0 {
-		fmt.Println("No fn params to define")
-	}
+
 	for _, param := range params {
-		fmt.Println("Defining fn param in scope:", getIdentifierName(param))
 		r.defineIdentifier(param)
 	}
 
@@ -341,7 +323,6 @@ func (r *Resolver) handleIdentifier(node *common.Node) error {
 	// This has the side effect of registering undefined identifiers as global.
 	info, _, err := r.lookupIdentifier(node)
 	if err != nil {
-		fmt.Println(">>> Failing")
 		return err
 	}
 	// Update the last reference since we're traversing in order.
@@ -392,7 +373,6 @@ func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 	}
 	q, ok = node.Options[ProtectedOption]
 	if ok {
-		fmt.Println("Setting protected option for identifier:", name, "to", q)
 		info.IsProtected = (q == "true")
 	}
 	node.Options[common.OptionSerialNo] = fmt.Sprintf("%d", info.UniqueID)
@@ -437,16 +417,10 @@ func (r *Resolver) annotate(node *common.Node) error {
 		if id.Name == common.NameIdentifier {
 			info := r.getIdentifierInfo(id)
 			if info.ScopeType != GlobalScope {
-				// fmt.Printf("Checking scope chain for shadowing of: %s\n", info.Name)
 				// Scan the scope chain looking for prior definitions of the same identifier.
 				for s := r.currentScope; s != nil; s = s.Parent {
-					// fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
-					// for _, prior := range s.Identifiers {
-					// 	fmt.Println("Checking prior identifier:", prior.Name, prior.IsProtected)
-					// }
 					prior, found := s.Identifiers[info.Name]
 					if found && prior != nil {
-						// fmt.Println("FOUND PRIOR DEFINITION OF:", info.Name)
 						if prior.IsProtected {
 							return fmt.Errorf("trying to re-declare protected identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
 						}
@@ -461,9 +435,7 @@ func (r *Resolver) annotate(node *common.Node) error {
 		id := node.Children[0]
 		if id.Name == common.NameIdentifier {
 			info := r.getIdentifierInfo(id)
-			// fmt.Printf("Checking assignability of: %s, %t\n", info.Name, info.IsAssignable)
 			if !info.IsAssignable {
-				// fmt.Println("THROWING ERROR")
 				return fmt.Errorf("assigning to non-assignable identifier: %s, at line %d, column %d", info.Name, id.Span.StartLine, id.Span.StartColumn)
 			}
 		} else {
@@ -519,13 +491,10 @@ func (r *Resolver) lookupIdentifier(node *common.Node) (*IdentifierInfo, *Scope,
 	if name == "" {
 		return nil, nil, fmt.Errorf("invalid identifier node")
 	}
-	fmt.Printf("Looking up identifier node: %s\n", name)
 	info, scope, err := r.currentScope.lookupIdentifier(name, r)
 	if err != nil {
-		fmt.Println(">>> ERROR")
 		return nil, nil, err
 	}
-	fmt.Println(">>> Found identifier info:", info, "in scope level:", scope.Level)
 	if info != nil {
 		node.Options[common.OptionSerialNo] = fmt.Sprintf("%d", info.UniqueID)
 		return info, scope, nil
@@ -536,12 +505,10 @@ func (r *Resolver) lookupIdentifier(node *common.Node) (*IdentifierInfo, *Scope,
 }
 
 func (scope *Scope) lookupIdentifier(name string, r *Resolver) (*IdentifierInfo, *Scope, error) {
-	// fmt.Println("Looking up identifier:", name, "in scope level:", scope.Level, "dynamic level:", scope.DynamicLevel)
 	s := scope
 	for s != nil {
 		if info, found := s.Identifiers[name]; found && info != nil {
 			if info.ScopeType == InnerScope {
-				// fmt.Println(name, "scope.DynamicLevel:", scope.DynamicLevel, "info.DefDynLevel:", info.DefDynLevel, "isDynamic:", scope.IsDynamic)
 				if scope.DynamicLevel != info.DefDynLevel && info.DefDynLevel != 0 {
 					info.ScopeType = OuterScope
 					err := scope.captureOuterIdentifier(info, r)
@@ -558,13 +525,9 @@ func (scope *Scope) lookupIdentifier(name string, r *Resolver) (*IdentifierInfo,
 }
 
 func (scope *Scope) captureOuterIdentifier(info *IdentifierInfo, r *Resolver) error {
-	// fmt.Println("Capturing outer identifier:", info.Name, "defined at dynamic level:", info.DefDynLevel)
-	// fmt.Println("Current scope level:", scope.Level, "dynamic level:", scope.DynamicLevel, "isDynamic:", scope.IsDynamic)
 	s := scope
 	deflevel := info.DefDynLevel
-	// fmt.Println("s != nil", s != nil, "s.DynamicLevel > deflevel", s.DynamicLevel > deflevel)
 	for s != nil && s.DynamicLevel > deflevel {
-		// fmt.Println("Checking scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isDynamic:", s.IsDynamic)
 		if s.IsDynamic {
 			err := s.captureIdentifier(info, r)
 			if err != nil {
