@@ -383,6 +383,22 @@ passes:
 
       - name: def->bind
         match:
+          parent:
+            name: def
+            count: 2
+          self:
+            name: apply
+            count: 2
+          child:
+            name: id
+        action:
+          childAction:
+            replaceValue:
+              key: protected
+              with: "true"
+
+      - name: def->bind
+        match:
           self:
             name: def
             count: 2
@@ -393,9 +409,6 @@ passes:
           sequence:
             - replaceName:
                 with: bind
-            - replaceValue:
-                key: protected
-                with: "true"
             - inlineChild: true
             - newNodeChild:
                 name: fn
@@ -416,8 +429,12 @@ passes:
           sequence:
             - childAction:
                 replaceValue:
-                  key: qualifier
-                  with: var
+                  key: var
+                  with: "true"
+            - childAction:
+                replaceValue:
+                  key: const
+                  with: "false"
             - replaceByChild: 0
         breakOnSuccess: true
 
@@ -431,8 +448,12 @@ passes:
           sequence:
             - childAction:
                 replaceValue:
-                  key: qualifier
-                  with: val
+                  key: var
+                  with: "false"
+            - childAction:
+                replaceValue:
+                  key: const
+                  with: "false"
             - replaceByChild: 0
         breakOnSuccess: true
 
@@ -446,8 +467,12 @@ passes:
           sequence:
             - childAction:
                 replaceValue:
-                  key: qualifier
-                  with: const
+                  key: var
+                  with: "false"
+            - childAction:
+                replaceValue:
+                  key: const
+                  with: "true"
             - replaceByChild: 0
         breakOnSuccess: true
 
