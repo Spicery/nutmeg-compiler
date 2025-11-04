@@ -41,16 +41,20 @@ func (s *Scope) isClosureScope() bool {
 	return s.IsDynamic && len(s.Captured) > 0
 }
 
-func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) {
+func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) error {
 	fmt.Println("Capturing in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "identifier:", info.Name)
+	if info.IsAssignable {
+		return fmt.Errorf("trying to capture assignable identifier: %s", info.Name)
+	}
 	if s.Captured[info.UniqueID] == nil {
 		if s.Captured == nil {
 			s.Captured = make(map[uint64]*IdentifierInfo)
 		}
 		s.Captured[info.UniqueID] = info
-		r.Closures = append(r.Closures, s)
+		r.Closures[s] = true
 		fmt.Println("Captured identifier:", info.Name, "in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isClosure:", s.isClosureScope())
 	}
+	return nil
 }
 
 // getInitialScopeType returns the scope type of the current scope.

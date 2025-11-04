@@ -1,6 +1,10 @@
 package resolver
 
-import "github.com/spicery/nutmeg-compiler/pkg/common"
+import (
+	"fmt"
+
+	"github.com/spicery/nutmeg-compiler/pkg/common"
+)
 
 // ScopeType represents the scope level of an identifier.
 type ScopeType string
@@ -22,4 +26,18 @@ type IdentifierInfo struct {
 	IsProtected   bool         // Whether this identifier can be shadowed.
 	LastReference *common.Node // The position of the last reference in the AST traversal.
 	DefiningScope *Scope       // The scope where this identifier is defined.
+}
+
+func (info *IdentifierInfo) toNode(stype ScopeType) *common.Node {
+	return &common.Node{
+		Name:     "id",
+		Children: []*common.Node{},
+		Options: map[string]string{
+			common.OptionName:     info.Name,
+			common.OptionSerialNo: fmt.Sprintf("%d", info.UniqueID),
+			common.OptionScope:    fmt.Sprintf("%s", stype),
+			common.OptionVar:      fmt.Sprintf("%t", info.IsAssignable),
+			common.OptionConst:    fmt.Sprintf("%t", info.IsConst),
+		},
+	}
 }
