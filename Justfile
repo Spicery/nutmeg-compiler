@@ -65,3 +65,13 @@ install:
     go install ./cmd/nutmeg-resolver
     go install ./cmd/nutmeg-common
     go install ./cmd/nutmeg-convert-tree
+
+# Copy the rewrite rules over.
+rules:
+    @echo "Generating default-rewrite-rules.go from configs/rewrite.yaml..."
+    @echo 'package rewriter' > pkg/rewriter/default-rewrite-rules.go
+    @echo '' >> pkg/rewriter/default-rewrite-rules.go
+    @echo 'const DefaultRewriteRules = `' >> pkg/rewriter/default-rewrite-rules.go
+    @cat configs/rewrite.yaml >> pkg/rewriter/default-rewrite-rules.go
+    @echo '`' >> pkg/rewriter/default-rewrite-rules.go
+    @echo "Done! Generated pkg/rewriter/default-rewrite-rules.go"
