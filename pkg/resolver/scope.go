@@ -42,7 +42,6 @@ func (s *Scope) isClosureScope() bool {
 }
 
 func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) error {
-	fmt.Println("Capturing in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "identifier:", info.Name)
 	if info.IsAssignable {
 		return fmt.Errorf("trying to capture assignable identifier: %s", info.Name)
 	}
@@ -52,7 +51,6 @@ func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) error {
 		}
 		s.Captured[info.UniqueID] = info
 		r.Closures[s] = true
-		fmt.Println("Captured identifier:", info.Name, "in scope level:", s.Level, "dynamic level:", s.DynamicLevel, "isClosure:", s.isClosureScope())
 	}
 	return nil
 }
