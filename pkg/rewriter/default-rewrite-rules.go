@@ -585,16 +585,6 @@ passes:
               count: 2
         breakOnSuccess: true
 
-      - name: bind
-        match:
-          self:
-            name: bind
-        action:
-          assert:
-            self:
-              count: 2
-        breakOnSuccess: true
-
       - name: assign
         match:
           self:
@@ -652,6 +642,20 @@ passes:
             name: arguments
         action:
           clearOptions: true
+        breakOnSuccess: true
+
+      - name: Validate bind
+        match:
+          self:
+            name: bind
+          child:
+            siblingPosition: 0
+        action:
+          assert:
+            self:
+              count: 2
+            child:
+              name: id
         breakOnSuccess: true
 
       - name: Fail Validation
