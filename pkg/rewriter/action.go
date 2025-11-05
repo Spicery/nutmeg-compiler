@@ -105,7 +105,6 @@ func (a *ReplaceNameWithAction) Apply(pattern *Pattern, childPosition int, node 
 	if node == nil {
 		return node, false
 	}
-	// fmt.Fprintf(os.Stderr, "      ReplaceNameWithAction: replacing name %s with %s\n", node.Name, a.With)
 	node.Name = a.With
 	return node, true
 }
@@ -121,7 +120,6 @@ func fetchFrom(from string, key *string, node *common.Node) string {
 		if key == nil {
 			return ""
 		}
-		// fmt.Fprintln(os.Stderr, "fetchFrom: fetching value for key", *key)
 		return node.Options[*key]
 	case "key":
 		if key == nil {

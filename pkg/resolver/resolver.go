@@ -114,8 +114,6 @@ func renumberIdentifiersInNode(node *common.Node, renumber_str map[string]string
 			node.Options[common.OptionSerialNo] = new_no
 		}
 	}
-	// Renumber the node's identifier if it exists in the mapping.
-	// Recursively renumber child nodes.
 	for _, child := range node.Children {
 		renumberIdentifiersInNode(child, renumber_str)
 	}
@@ -337,7 +335,7 @@ func (r *Resolver) annotate(node *common.Node) error {
 			info := r.getIdentifierInfo(id)
 			if info.ScopeType != GlobalScope {
 				// Scan the scope chain looking for prior definitions of the same identifier.
-				for s := r.currentScope; s != nil; s = s.Parent {
+				for s := info.DefiningScope.Parent; s != nil; s = s.Parent {
 					prior, found := s.Identifiers[info.Name]
 					if found && prior != nil {
 						if prior.IsProtected {
