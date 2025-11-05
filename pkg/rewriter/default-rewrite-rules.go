@@ -30,11 +30,22 @@ passes:
             - inlineChild: true
             - permuteChildren: [0, 1]
             - newNodeChild:
-                name: delimited
+                name: arguments
                 key: kind
                 value: parentheses
                 offset: 1
                 length: 2
+
+      - name: Rename apply/delimited to apply/arguments
+        match:
+          self:
+            name: apply
+          child:
+            name: delimited
+        action:
+          childAction:
+            replaceName:
+              with: arguments
 
       - name: Rename negation as seq and toggle sign of number
         match:
@@ -286,6 +297,7 @@ passes:
 
   - name: Pass 4, convert forms to seq
     downwards:
+
       - name: Rename form using keyword
         match:
           self:
@@ -298,6 +310,38 @@ passes:
           replaceName:
             src: child
             from: value
+
+      - name: Normalise fn, delimited->arguments
+        match:
+          self:
+            name: part
+            key: keyword
+            value: fn
+          child:
+            name: delimited
+            key: kind
+            value: parentheses
+            siblingPosition: 0
+        action:
+          childAction:
+            replaceName:
+              with: arguments
+
+      - name: Normalise fn, id->arguments
+        match:
+          self:
+            name: part
+            key: keyword
+            value: fn
+            count: 1
+          child:
+            name: id
+            key: name
+        action:
+          newNodeChild:
+            name: arguments
+            offset: 0
+            length: 1
 
       - name: Rename parts to seq
         match:
@@ -337,6 +381,40 @@ passes:
           replaceByChild: 0
         onSuccess: Inline nested sequences
 
+      - name: def->bind
+        match:
+          parent:
+            name: def
+            count: 2
+          self:
+            name: apply
+            count: 2
+          child:
+            name: id
+        action:
+          childAction:
+            replaceValue:
+              key: protected
+              with: "true"
+
+      - name: def->bind
+        match:
+          self:
+            name: def
+            count: 2
+          child:
+            name: apply
+            count: 2
+        action:
+          sequence:
+            - replaceName:
+                with: bind
+            - inlineChild: true
+            - newNodeChild:
+                name: fn
+                offset: 1
+                length: 2
+
   - name: Pass 5, qualifiers
     singlePass: true
 
@@ -351,8 +429,12 @@ passes:
           sequence:
             - childAction:
                 replaceValue:
-                  key: qualifier
-                  with: var
+                  key: var
+                  with: "true"
+            - childAction:
+                replaceValue:
+                  key: const
+                  with: "false"
             - replaceByChild: 0
         breakOnSuccess: true
 
@@ -366,8 +448,12 @@ passes:
           sequence:
             - childAction:
                 replaceValue:
-                  key: qualifier
-                  with: val
+                  key: var
+                  with: "false"
+            - childAction:
+                replaceValue:
+                  key: const
+                  with: "false"
             - replaceByChild: 0
         breakOnSuccess: true
 
@@ -381,8 +467,12 @@ passes:
           sequence:
             - childAction:
                 replaceValue:
-                  key: qualifier
-                  with: const
+                  key: var
+                  with: "false"
+            - childAction:
+                replaceValue:
+                  key: const
+                  with: "true"
             - replaceByChild: 0
         breakOnSuccess: true
 
@@ -392,7 +482,6 @@ passes:
             name: val
         action:
           fail: "Qualifier was not followed by an identifier"
-
 
   - name: Last pass, Validate
     optional: true
@@ -496,16 +585,6 @@ passes:
               count: 2
         breakOnSuccess: true
 
-      - name: bind
-        match:
-          self:
-            name: bind
-        action:
-          assert:
-            self:
-              count: 2
-        breakOnSuccess: true
-
       - name: assign
         match:
           self:
@@ -536,16 +615,6 @@ passes:
               count: 2
         breakOnSuccess: true
 
-      - name: Def
-        match:
-          self:
-            name: def
-        action:
-          assert:
-            self:
-              count: 2
-        breakOnSuccess: true
-
       - name: Let
         match:
           self:
@@ -560,9 +629,33 @@ passes:
           self:
             name: fn
         action:
+          sequence:
+            - assert:
+                self:
+                  count: 2
+            - clearOptions: true
+        breakOnSuccess: true
+
+      - name: Arguments
+        match:
+          self:
+            name: arguments
+        action:
+          clearOptions: true
+        breakOnSuccess: true
+
+      - name: Validate bind
+        match:
+          self:
+            name: bind
+          child:
+            siblingPosition: 0
+        action:
           assert:
             self:
               count: 2
+            child:
+              name: id
         breakOnSuccess: true
 
       - name: Fail Validation

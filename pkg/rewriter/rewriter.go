@@ -61,7 +61,7 @@ func NewRewriterWithOptions(rewriteConfig *RewriteConfig, debug bool, skipOption
 		// Skip optional passes if skipOptional is true.
 		if skipOptional && passConfig.Optional {
 			if debug {
-				fmt.Fprintf(os.Stderr, "Skipping optional pass: %s\n", passConfig.Name)
+				fmt.Fprintf(os.Stderr, "  Skipping optional pass: %s\n", passConfig.Name)
 			}
 			continue
 		}
@@ -176,6 +176,19 @@ func NewRewriterWithOptions(rewriteConfig *RewriteConfig, debug bool, skipOption
 		optimizeRuleJumps(upwards, debug)
 
 		rewriter.Passes = append(rewriter.Passes, pass)
+	}
+	if debug {
+		// Print a summary of the compiled rewriter.
+		fmt.Fprintf(os.Stderr, "Compiled rewriter \"%s\" with %d passes\n", rewriter.Name, len(rewriter.Passes))
+		for p, pass := range rewriter.Passes {
+			fmt.Fprintf(os.Stderr, "  Pass #%d: %s - %d downwards rules, %d upwards rules\n", p, pass.Name, len(pass.DownwardsRules), len(pass.UpwardsRules))
+			for d, down := range pass.DownwardsRules {
+				fmt.Fprintf(os.Stderr, "    Down Rule #%d: %s (OnSuccess: %d, OnFailure: %d)\n", d, down.Name, down.OnSuccess, down.OnFailure)
+			}
+			for u, up := range pass.UpwardsRules {
+				fmt.Fprintf(os.Stderr, "    Up Rule #%d: %s (OnSuccess: %d, OnFailure: %d)\n", u, up.Name, up.OnSuccess, up.OnFailure)
+			}
+		}
 	}
 	return rewriter, nil
 }
@@ -463,9 +476,13 @@ func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 		// Skip passes that have been marked as skippable.
 		if pass.Skippable {
 			if r.Debug {
-				fmt.Fprintf(os.Stderr, "Skipping pass '%s' (single-pass already completed)\n", pass.Name)
+				fmt.Fprintf(os.Stderr, "  Skipping pass '%s' (single-pass already completed)\n", pass.Name)
 			}
 			continue
+		} else {
+			if r.Debug {
+				fmt.Fprintf(os.Stderr, "  Executing pass '%s'\n", pass.Name)
+			}
 		}
 
 		var changed bool
@@ -478,7 +495,7 @@ func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 		if pass.SinglePass && !pass.Skippable {
 			pass.Skippable = true
 			if r.Debug {
-				fmt.Fprintf(os.Stderr, "Marking pass '%s' as skippable (single-pass completed)\n", pass.Name)
+				fmt.Fprintf(os.Stderr, "  Marking pass '%s' as skippable (single-pass completed)\n", pass.Name)
 			}
 		}
 	}
@@ -486,6 +503,9 @@ func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 }
 
 func (r *RewriterPass) doRewrite(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
+	if debug {
+		fmt.Fprintf(os.Stderr, "    [%s] Visiting\n", node.Name)
+	}
 	if node == nil {
 		return nil, false
 	}
@@ -525,7 +545,9 @@ func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[
 	currentRule := getStartIndex(node.Name, startIndexMap, len(rules))
 
 	if debug && currentRule > 0 {
-		fmt.Fprintf(os.Stderr, "[OPT1] Node '%s': starting at rule #%d (skipped %d rules)\n", node.Name, currentRule, currentRule)
+		if currentRule < len(rules) {
+			fmt.Fprintf(os.Stderr, "      [%s] Node '%s': starting at rule #%d\n", rules[currentRule].Name, node.Name, currentRule)
+		}
 	}
 
 	anyChanged := false
@@ -542,12 +564,12 @@ func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[
 				}
 				currentRule = rule.OnSuccess
 				if debug {
-					fmt.Fprintln(os.Stderr, "Success with rule", rule.Name, ", moving to rule #", currentRule)
+					fmt.Fprintln(os.Stderr, "      Success with rule", rule.Name, ", moving to rule #", currentRule)
 				}
 			} else {
 				currentRule = rule.OnFailure
 				if debug {
-					fmt.Fprintln(os.Stderr, "Failure, moving to rule #", currentRule)
+					fmt.Fprintln(os.Stderr, "      Failure, moving to rule #", currentRule)
 				}
 			}
 		}

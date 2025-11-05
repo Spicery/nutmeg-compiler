@@ -18,6 +18,17 @@ type Action interface {
 /// Actions
 ////////////////////////////////////////////////////////////////////////////////
 
+type ClearOptionsAction struct {
+}
+
+func (a *ClearOptionsAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+	if node == nil {
+		return node, false
+	}
+	clear(node.Options)
+	return node, true
+}
+
 type NullAction struct {
 }
 
@@ -109,7 +120,6 @@ func fetchFrom(from string, key *string, node *common.Node) string {
 		if key == nil {
 			return ""
 		}
-		// fmt.Fprintln(os.Stderr, "fetchFrom: fetching value for key", *key)
 		return node.Options[*key]
 	case "key":
 		if key == nil {
