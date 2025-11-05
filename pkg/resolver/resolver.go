@@ -174,7 +174,6 @@ func (r *Resolver) handleFnScope(node *common.Node) error {
 	// Enter a new dynamic scope.
 	r.currentScope = r.currentScope.NewChildScope(true, node)
 
-	fmt.Println("handling fn scope, level:", node.Name)
 	// If the fn has a name (first child is an id), define it in the function's own scope
 	// for self-reference (e.g., fn factorial(n) =>> ... factorial(n-1) ...)
 	params, err := r.extractFnInfo(node)
@@ -183,7 +182,6 @@ func (r *Resolver) handleFnScope(node *common.Node) error {
 	}
 
 	for _, param := range params {
-		fmt.Println("Defining fn parameter:", param.Name)
 		r.defineIdentifier(param)
 	}
 
