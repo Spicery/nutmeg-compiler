@@ -82,12 +82,10 @@ func (r *Resolver) closureCaptures() {
 		}
 		for _, info := range closureScope.Captured {
 			next_id := r.nextID
+			r.nextID++
 			next_id_str := fmt.Sprintf("%d", next_id)
-			r.nextID++
 			renumber_str[fmt.Sprintf("%d", info.UniqueID)] = next_id_str
-			r.nextID++
 			arg_node := info.toNode(common.ValueInner)
-			// arg_node.Options[common.OptionSerialNo] = next_id_str
 			args.Children = append(args.Children, arg_node)
 		}
 
@@ -134,8 +132,6 @@ func (r *Resolver) traverse(node *common.Node) error {
 	switch node.Name {
 	case common.NameBind:
 		return r.handleBind(node)
-	case common.NameDef:
-		return r.handleDef(node)
 	case common.NameFn:
 		return r.handleFnScope(node)
 	case common.NameLet, common.NameIf, common.NameFor:
@@ -173,57 +169,6 @@ func (r *Resolver) handleBind(node *common.Node) error {
 	return nil
 }
 
-// handleDef processes a def node: def f(x): body end.
-// Structure: def -> [apply(f, x), body]
-// The apply node contains the function name and parameters.
-func (r *Resolver) handleDef(node *common.Node) error {
-	if len(node.Children) != 2 {
-		return fmt.Errorf("invalid def node structure")
-	}
-
-	// Declare the identifier in the current scope.
-	if node.Children[0].Name == "apply" {
-		applyNode := node.Children[0]
-		// First child of apply is the function name (defining occurrence).
-		if len(applyNode.Children) > 0 && applyNode.Children[0].Name == "id" {
-			info := r.defineIdentifier(applyNode.Children[0])
-			if info.ScopeType == GlobalScope {
-				info.IsAssignable = false
-				info.IsConst = true
-			}
-		}
-	} else {
-		return fmt.Errorf("unimplemented: first child must be apply")
-	}
-
-	// Enter a new dynamic scope.
-	r.currentScope = r.currentScope.NewChildScope(true, node)
-
-	// Extract function name and parameters from the first child (apply node).
-	if node.Children[0].Name == "apply" {
-		applyNode := node.Children[0]
-		// Second child is an arguments node containing parameters (defining occurrences).
-		argsNode := applyNode.Children[1]
-		for _, arg := range argsNode.Children {
-			if arg.Name == "id" {
-				r.defineIdentifier(arg)
-			}
-		}
-	} else {
-		return fmt.Errorf("unimplemented: first child must be apply")
-	}
-
-	// Traverse remaining children (body of the function), skipping the first (apply).
-	if err := r.traverse(node.Children[1]); err != nil {
-		return err
-	}
-
-	// Restore the previous scope.
-	r.currentScope = r.currentScope.Parent
-
-	return nil
-}
-
 // handleFnScope processes nodes that introduce a dynamic scope (fn).
 // Structure for named fn: fn -> [id(name), params..., body]
 // Structure for anonymous fn: fn -> [params..., body]
@@ -231,21 +176,21 @@ func (r *Resolver) handleFnScope(node *common.Node) error {
 	// Enter a new dynamic scope.
 	r.currentScope = r.currentScope.NewChildScope(true, node)
 
+	fmt.Println("handling fn scope, level:", node.Name)
 	// If the fn has a name (first child is an id), define it in the function's own scope
 	// for self-reference (e.g., fn factorial(n) =>> ... factorial(n-1) ...)
-	name, params, err := r.extractFnInfo(node)
+	params, err := r.extractFnInfo(node)
 	if err != nil {
 		return err
 	}
-	if name != nil {
-		r.defineIdentifierByName(*name)
-	}
 
 	for _, param := range params {
+		fmt.Println("Defining fn parameter:", param.Name)
 		r.defineIdentifier(param)
 	}
 
-	if err := r.traverse(node.Children[1]); err != nil {
+	err = r.traverse(node.Children[1])
+	if err != nil {
 		return err
 	}
 
@@ -255,41 +200,20 @@ func (r *Resolver) handleFnScope(node *common.Node) error {
 }
 
 // This is a helper function that takes a function node and extracts the
-// name and parameters.
-func (r *Resolver) extractFnInfo(node *common.Node) (*string, []*common.Node, error) {
+// arameters.
+func (r *Resolver) extractFnInfo(node *common.Node) ([]*common.Node, error) {
 	if node == nil || len(node.Children) == 0 {
-		return nil, nil, fmt.Errorf("invalid function node structure")
+		return nil, fmt.Errorf("invalid function node structure")
 	}
 
-	// The first child is either an Apply node or a Seq node or a single id node.
+	// The first child must be an Arguments node.
 	first := node.Children[0]
 
-	if first.Name == common.NameApply {
-		// There must be exactly 2 children, the first of which is an id node.
-		if len(first.Children) != 2 {
-			return nil, nil, fmt.Errorf("invalid function node structure")
-		}
-		fn_name := first.Children[0]
-		fn_args := first.Children[1]
-		if fn_name.Name != common.NameIdentifier {
-			return nil, nil, fmt.Errorf("invalid function name node")
-		}
-		if fn_args.Name != common.NameSeq {
-			return nil, nil, fmt.Errorf("invalid function arguments node")
-		}
-		name := getIdentifierName(fn_name)
-		return &name, fn_args.Children, nil
+	if first.Name != common.NameArguments {
+		return nil, fmt.Errorf("invalid function node")
 	}
 
-	if first.Name == common.NameIdentifier {
-		return nil, []*common.Node{first}, nil
-	}
-
-	if first.Name != common.NameSeq {
-		return nil, first.Children, nil
-	}
-
-	return nil, nil, fmt.Errorf("invalid function node")
+	return first.Children, nil
 }
 
 // handleLexicalScope processes nodes that introduce a lexical scope (let, if, for).
@@ -377,11 +301,6 @@ func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 	}
 	node.Options[common.OptionSerialNo] = fmt.Sprintf("%d", info.UniqueID)
 	return info
-}
-
-func (r *Resolver) defineIdentifierByName(name string) {
-	// Create and store metadata for this identifier.
-	r.NewIdentifierInfo(name)
 }
 
 // annotate performs the second pass traversal to annotate all nodes with resolution information.
