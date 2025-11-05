@@ -35,7 +35,7 @@ func (info *IdentifierInfo) toNode(stype ScopeType) *common.Node {
 		Options: map[string]string{
 			common.OptionName:     info.Name,
 			common.OptionSerialNo: fmt.Sprintf("%d", info.UniqueID),
-			common.OptionScope:    fmt.Sprintf("%s", stype),
+			common.OptionScope:    string(stype),
 			common.OptionVar:      fmt.Sprintf("%t", info.IsAssignable),
 			common.OptionConst:    fmt.Sprintf("%t", info.IsConst),
 		},

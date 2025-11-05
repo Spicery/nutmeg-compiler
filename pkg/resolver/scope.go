@@ -37,10 +37,6 @@ func (s *Scope) NewChildScope(isDynamic bool, node *common.Node) *Scope {
 	return scope
 }
 
-func (s *Scope) isClosureScope() bool {
-	return s.IsDynamic && len(s.Captured) > 0
-}
-
 func (s *Scope) captureIdentifier(info *IdentifierInfo, r *Resolver) error {
 	if info.IsAssignable {
 		return fmt.Errorf("trying to capture assignable identifier: %s", info.Name)
