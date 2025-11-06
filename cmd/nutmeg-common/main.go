@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/spicery/nutmeg-compiler/pkg/checker"
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 	"github.com/spicery/nutmeg-compiler/pkg/parser"
 	"github.com/spicery/nutmeg-compiler/pkg/rewriter"
@@ -150,6 +151,13 @@ func main() {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Parse error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Phase 2.5: Syntax checking
+	c := checker.NewChecker()
+	if !c.Check(tree) {
+		c.ReportErrors()
 		os.Exit(1)
 	}
 

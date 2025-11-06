@@ -53,6 +53,7 @@ build:
     mkdir -p bin
     go build -o bin/nutmeg-tokenizer ./cmd/nutmeg-tokenizer
     go build -o bin/nutmeg-parser ./cmd/nutmeg-parser
+    go build -o bin/nutmeg-check-syntax ./cmd/nutmeg-check-syntax
     go build -o bin/nutmeg-rewriter ./cmd/nutmeg-rewriter
     go build -o bin/nutmeg-resolver ./cmd/nutmeg-resolver
     go build -o bin/nutmeg-common ./cmd/nutmeg-common
@@ -61,6 +62,7 @@ build:
 install:
     go install ./cmd/nutmeg-tokenizer
     go install ./cmd/nutmeg-parser
+    go install ./cmd/nutmeg-check-syntax
     go install ./cmd/nutmeg-rewriter
     go install ./cmd/nutmeg-resolver
     go install ./cmd/nutmeg-common
