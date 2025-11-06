@@ -24,12 +24,22 @@ type Checker struct {
 }
 
 func (c *Checker) ReportErrors() {
-	if len(c.Issues) == 0 {
-		return
+	// First report any bugs and then move onto issues.
+	if len(c.Bugs) > 0 {
+		fmt.Fprintln(os.Stderr, "Bug in parser detected; the output of the parser is faulty:")
+		count := 0
+		for _, bug := range c.Bugs {
+			count++
+			fmt.Fprintf(os.Stderr, "  [%d]. %s, at line %d, column %d\n", count, bug.Message, bug.Node.Span.StartLine, bug.Node.Span.StartColumn)
+		}
 	}
-	fmt.Fprintf(os.Stderr, "Errors found")
-	for _, msg := range c.Issues {
-		fmt.Fprintf(os.Stderr, "- %s\n", msg)
+	if len(c.Issues) > 0 {
+		fmt.Fprintln(os.Stderr, "Errors found in the source code:")
+		count := 0
+		for _, issue := range c.Issues {
+			count++
+			fmt.Fprintf(os.Stderr, "  [%d]. %s, at line %d, column %d\n", count, issue.Message, issue.Node.Span.StartLine, issue.Node.Span.StartColumn)
+		}
 	}
 }
 
@@ -56,7 +66,7 @@ func (c *Checker) Check(node *common.Node) bool {
 
 	c.validateChildren(node)
 
-	return len(c.Issues) == 0
+	return len(c.Issues) == 0 && len(c.Bugs) == 0
 }
 
 func (c *Checker) validateChildren(node *common.Node) {
@@ -124,8 +134,7 @@ func (c *Checker) validateDelimited(node *common.Node) {
 		return
 	}
 	switch val {
-	case common.ValueComma:
-	case common.ValueSemicolon:
+	case common.ValueParentheses, common.ValueBraces, common.ValueBrackets:
 	default:
 		c.addBug(fmt.Sprintf("unexpected delimited kind: %s", val), node)
 	}
@@ -195,7 +204,7 @@ func (c *Checker) validateDefPattern(node *common.Node) {
 	// the application of an identifier to zero or more
 	// identifiers, e.g., "x" or "f a b c". Allowed nodes are
 	// "apply", "operator .", "delimited paretheses", and "id".
-	fmt.Println("Checking def pattern:", node.Name)
+	// fmt.Println("Checking def pattern:", node.Name)
 	switch node.Name {
 	case common.NameOperator:
 		c.validateDefDot(node)
@@ -216,7 +225,7 @@ func (c *Checker) validateDefPattern(node *common.Node) {
 }
 
 func (c *Checker) validateDefApply(node *common.Node) {
-	fmt.Println("Checking def apply:", node.Name)
+	// fmt.Println("Checking def apply:", node.Name)
 	if !c.factArity(2, node) {
 		return
 	}
@@ -235,7 +244,7 @@ func (c *Checker) validateDefApply(node *common.Node) {
 }
 
 func (c *Checker) validateDefDot(node *common.Node) {
-	fmt.Println("Checking dot pattern")
+	// fmt.Println("Checking dot pattern")
 	if node.Options[common.OptionName] != "." {
 		c.addIssue("invalid operator in def pattern", node)
 		return
@@ -250,7 +259,7 @@ func (c *Checker) validateDefDot(node *common.Node) {
 }
 
 func (c *Checker) validateDefArgs(node *common.Node) {
-	fmt.Println("Checking args:", node.Name)
+	// fmt.Println("Checking args:", node.Name)
 	switch node.Name {
 	case common.NameDelimited:
 		if node.Options[common.OptionKind] != common.ValueParentheses {
@@ -267,7 +276,7 @@ func (c *Checker) validateDefArgs(node *common.Node) {
 }
 
 func (c *Checker) validateDefArg(node *common.Node) {
-	fmt.Println("Checking arg:", node.Name)
+	// fmt.Println("Checking arg:", node.Name)
 	switch node.Name {
 	case common.NameIdentifier:
 		c.validateIdentifier(node)
@@ -277,12 +286,12 @@ func (c *Checker) validateDefArg(node *common.Node) {
 		}
 		c.validateDefArg(node.Children[0])
 	default:
-		c.addIssue("invalid arg in def pattern", node)
+		c.addIssue("invalid parameter", node)
 	}
 }
 
 func (c *Checker) validateDefFn(node *common.Node) {
-	fmt.Println("Checking fn:", node.Name)
+	// fmt.Println("Checking fn:", node.Name)
 	switch node.Name {
 	case common.NameIdentifier:
 		c.validateIdentifier(node)

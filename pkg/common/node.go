@@ -61,6 +61,8 @@ const OptionVar = "var"
 const OptionConst = "const"
 
 const ValueParentheses = "parentheses"
+const ValueBrackets = "brackets"
+const ValueBraces = "braces"
 const ValueDef = "def"
 const ValueFn = "fn"
 const ValueLet = "let"
