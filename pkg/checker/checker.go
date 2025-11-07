@@ -341,7 +341,7 @@ func (c *Checker) validateFormIf(if_node *common.Node) {
 	c.validateGrandChildren(if_node)
 }
 
-// checkFor validates the structure of a "for" node.
+// validateFormFor validates the structure of a "for" node.
 func (c *Checker) validateFormFor(for_node *common.Node) {
 	if !c.factArity(2, for_node) {
 		return
