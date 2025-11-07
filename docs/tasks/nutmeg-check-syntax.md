@@ -9,7 +9,7 @@ tool will:
 - read in the unit-node (in JSON format) that is emitted by nutmeg-parse,
 - walk the tree, checking that nodes conform to additional syntactic rules that
   are not enforced by nutmeg-parse,
-- if the rules are violated them it will exit with a non-zero status,
+- if the rules are violated then it will exit with a non-zero status,
 - otherwise it simply emits the tree unchanged on the stdout.
 
 This command will share the same basic options as the other nutmeg-XXX 
