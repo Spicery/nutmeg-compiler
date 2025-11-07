@@ -655,7 +655,7 @@ func (p *Parser) DoReadExprPrec(outerPrec int, optional bool) (*Node, error) {
 			p.DropPeekedToken()
 			switch op.Type {
 			case OpenDelimiterTokenType:
-				args, err := p.ReadDelimited(op)
+				args, err := p.ReadArguments(op)
 				if err != nil {
 					return nil, err
 				}
@@ -772,9 +772,17 @@ func (p *Parser) ReadId(token *Token) (*Node, error) {
 }
 
 func (p *Parser) ReadDelimited(token *Token) (*Node, error) {
+	return p.ReadBracketedExprs(token, NameDelimited)
+}
+
+func (p *Parser) ReadArguments(token *Token) (*Node, error) {
+	return p.ReadBracketedExprs(token, NameArguments)
+}
+
+func (p *Parser) ReadBracketedExprs(token *Token, name string) (*Node, error) {
 	p = p.Clone(false) // Switch back to non-fragile mode.
 	result := &Node{
-		Name: NameDelimited,
+		Name: name,
 		Options: map[string]string{
 			OptionKind: token.ToKind(),
 		},

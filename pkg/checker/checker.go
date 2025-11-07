@@ -124,7 +124,14 @@ func (c *Checker) validateApply(node *common.Node) {
 	if len(node.Children) != 2 {
 		c.addBug("apply node must have exactly two children", node)
 	}
-	c.validateChildren(node)
+	lhs := node.Children[0]
+	rhs := node.Children[1]
+	c.validate(lhs)
+	if rhs.Name != common.NameArguments {
+		c.addBug("invalid apply arguments node", rhs)
+		return
+	}
+	c.validateChildren(rhs)
 }
 
 func (c *Checker) validateDelimited(node *common.Node) {
@@ -261,9 +268,9 @@ func (c *Checker) validateDefDot(node *common.Node) {
 func (c *Checker) validateDefArgs(node *common.Node) {
 	// fmt.Println("Checking args:", node.Name)
 	switch node.Name {
-	case common.NameDelimited:
+	case common.NameArguments:
 		if node.Options[common.OptionKind] != common.ValueParentheses {
-			c.addIssue("invalid delimited kind in args", node)
+			c.addIssue("invalid brackets for function parameters", node)
 			return
 		}
 		for _, child := range node.Children {

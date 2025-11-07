@@ -20,7 +20,7 @@ passes:
             count: 2
             siblingPosition: 0
           nextChild:
-            name: delimited
+            name: arguments
             key: kind
             value: parentheses
         action:
@@ -35,17 +35,6 @@ passes:
                 value: parentheses
                 offset: 1
                 length: 2
-
-      - name: Rename apply/delimited to apply/arguments
-        match:
-          self:
-            name: apply
-          child:
-            name: delimited
-        action:
-          childAction:
-            replaceName:
-              with: arguments
 
       - name: Rename negation as seq and toggle sign of number
         match:
