@@ -312,7 +312,7 @@ func (c *Checker) validateDefFn(node *common.Node) {
 	}
 }
 
-// checkFn validates the structure of a "fn" node.
+// validateFormFn validates the structure of a "fn" node.
 // TODO: Implement fn-specific validation rules.
 func (c *Checker) validateFormFn(node *common.Node) {
 	if !c.factArity(2, node) {
