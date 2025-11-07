@@ -241,13 +241,13 @@ func (c *Checker) validateDefApply(node *common.Node) {
 	switch lhs.Name {
 	case common.NameIdentifier:
 		c.validateIdentifier(lhs)
+		c.validateDefArgs(rhs)
 	case common.NameOperator:
 		c.validateDefDot(lhs)
 		c.validateDefArgs(rhs)
 	default:
 		c.addIssue("invalid lhs in def pattern apply", node)
 	}
-	c.validateDefArgs(rhs)
 }
 
 func (c *Checker) validateDefDot(node *common.Node) {
