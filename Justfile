@@ -77,3 +77,6 @@ rules:
     @cat configs/rewrite.yaml >> pkg/rewriter/default-rewrite-rules.go
     @echo '`' >> pkg/rewriter/default-rewrite-rules.go
     @echo "Done! Generated pkg/rewriter/default-rewrite-rules.go"
+
+jj:
+    python3 ./.tools/scripts/refresh_jj_bookmarks.py --base main --dry-run
