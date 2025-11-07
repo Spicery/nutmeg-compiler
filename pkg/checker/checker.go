@@ -324,12 +324,12 @@ func (c *Checker) validateFormFn(node *common.Node) {
 	}
 	p := params_part.Children[0]
 	switch p.Name {
-	case common.NameDelimited:
+	case common.NameArguments:
 		c.validateDefArgs(p)
 	case common.NameIdentifier:
 		c.validateIdentifier(p)
 	default:
-		c.addIssue("fn parameters must be delimited or identifier", node)
+		c.addIssue("fn parameters must be arguments or identifier", node)
 		return
 	}
 	body_part := node.Children[1]
