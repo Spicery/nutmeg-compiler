@@ -210,7 +210,7 @@ func (c *Checker) validateDefPattern(node *common.Node) {
 	// This verifies that the definition pattern consists of
 	// the application of an identifier to zero or more
 	// identifiers, e.g., "x" or "f a b c". Allowed nodes are
-	// "apply", "operator .", "delimited paretheses", and "id".
+	// "apply", "operator .", "delimited parentheses", and "id".
 	// fmt.Println("Checking def pattern:", node.Name)
 	switch node.Name {
 	case common.NameOperator:
