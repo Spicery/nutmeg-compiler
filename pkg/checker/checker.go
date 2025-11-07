@@ -336,7 +336,7 @@ func (c *Checker) validateFormFn(node *common.Node) {
 	c.validateChildren(body_part)
 }
 
-// checkIf validates the structure of an "if" node.
+// validateFormIf validates the structure of an "if" node.
 func (c *Checker) validateFormIf(if_node *common.Node) {
 	c.validateGrandChildren(if_node)
 }
