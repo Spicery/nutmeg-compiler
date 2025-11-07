@@ -25,7 +25,7 @@ commands such as nutmeg-parser, nutmeg-rewriter and nutmeg-resolver.
 
 ## Validations
 
-The key validations is concerned with the structure of definitions ("def") and
+The key validations are concerned with the structure of definitions ("def") and
 functions ("fn"). In addition we will check the arity of the different types 
 of node. Don't try to implement these, simply provide scaffolding code.
 
