@@ -374,7 +374,7 @@ func (c *Checker) validateQueryOperator(node *common.Node) {
 	}
 }
 
-// checkLet validates the structure of a "let" node.
+// validateFormLet validates the structure of a "let" node.
 func (c *Checker) validateFormLet(let_node *common.Node) {
 	c.validateGrandChildren(let_node)
 }
