@@ -44,7 +44,7 @@ fmt:
 
 # Check formatting without modifying files
 fmt-check:
-    ./.tools/repo/bin/go-fmt-check
+    ./.tools/bin/go-fmt-check
 
 tidy:
     go mod tidy

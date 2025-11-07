@@ -18,7 +18,7 @@ Optional but recommended:
 For Debian/Ubuntu Linux and macOS systems, you can use the jumpstart script to install all prerequisites:
 
 ```bash
-./.tools/repo/bin/jumpstart.sh
+./.tools/bin/jumpstart.sh
 ```
 
 This will automatically install all required and optional tools. On macOS, it will use Homebrew (and install it if needed).
