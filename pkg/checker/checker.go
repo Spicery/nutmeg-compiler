@@ -277,7 +277,7 @@ func (c *Checker) validateDefArgs(node *common.Node) {
 			c.validateDefArg(child)
 		}
 	default:
-		c.addIssue("args must be a delimited node", node)
+		c.addIssue("args must be an arguments node", node)
 		return
 	}
 }
