@@ -176,7 +176,7 @@ Importantly the inner lambda (`fn`) no longer captures any variables because we 
 
 - If you are familiar with this kind of transformation, you are probably asking what happens if the captured variable is mutable (i.e. `var`). In Nutmeg we forbid that scenario to nudge programmers, as part of Nutmeg's learning-by-doing ethos, into more functional styles of programming. We go into the implications of this decision in the next section.
 
-- The newly introduced variables are at the same level as globals but are deemed to exist in the own "UnitScope" and are only accessible in this unit (i.e. file). This is the mechanism used to avoid possible name clashes. The serial numbering reflects this too.
+- The newly introduced variables are at the same level as globals but are deemed to exist in their own "UnitScope" and are only accessible in this unit (i.e. file). This is the mechanism used to avoid possible name clashes. The serial numbering reflects this too.
 
 
 ## Achieving the effect of var-capture
