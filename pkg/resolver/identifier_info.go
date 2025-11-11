@@ -13,6 +13,7 @@ const (
 	GlobalScope ScopeType = "global"
 	OuterScope  ScopeType = "outer" // Outer local scope.
 	InnerScope  ScopeType = "inner" // Inner local scope.
+	UnitScope   ScopeType = "unit"  // Unit-level scope.
 )
 
 // IdentifierInfo holds information about a resolved identifier.

@@ -1,0 +1,6 @@
+
+def Q(a, b, c) =>>
+    fn x =>>
+        a * x * x + b * x + c
+    endfn
+enddef

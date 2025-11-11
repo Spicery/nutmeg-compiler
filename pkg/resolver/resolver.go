@@ -62,25 +62,134 @@ func (r *Resolver) Resolve(root *common.Node) error {
 	// Third pass: implement closure captures.
 	r.closureCaptures()
 
+	// Fourth pass: lift lambdas to the top level.
+	r.liftLambdas(root)
+
 	return nil
+}
+
+func (r *Resolver) liftLambdas(root *common.Node) {
+	// Collect the paths of all lambda nodes.
+	paths := collectLambdaPaths(root, nil)
+
+	// Exclude top-level definitions: unit[*]/bind[1]/lambda
+	paths = filterPaths(paths)
+
+	definitions := make([]*common.Node, 0)
+	for _, lambdaPath := range paths {
+		definitions = append(definitions, r.convertLambdaToDefinition(lambdaPath))
+	}
+
+	// Stitch the definitions at the top level.
+	root.Children = append(definitions, root.Children...)
+}
+
+func (r *Resolver) NewSerialNo() uint64 {
+	no := r.nextID
+	r.nextID++
+	return no
+}
+
+func filterPaths(paths []*common.Path) []*common.Path {
+	result := make([]*common.Path, 0)
+	for _, path := range paths {
+		if !isTopLevelPath(path) {
+			result = append(result, path)
+		}
+	}
+	return result
+}
+
+// isTopLevelPath determines if a path points to a lambda that is already at the top level.
+// Top-level lambdas have the structure: unit[*]/bind[1]/lambda, where the lambda is the
+// second child (index 1) of a bind node, which is a direct child of the unit node.
+// These lambdas should not be lifted since they're already in the correct position.
+func isTopLevelPath(path *common.Path) bool {
+	// unit[*]/bind[1]
+	if path == nil || path.Parent == nil {
+		return false // defensive
+	}
+	if path.Parent.Name != common.NameBind || path.SiblingPosition != 1 {
+		return false
+	}
+	if path.Others == nil || path.Others.Parent == nil || path.Others.Parent.Name != common.NameUnit {
+		return false
+	}
+	return path.Others.Others == nil
+}
+
+func (r *Resolver) convertLambdaToDefinition(path *common.Path) *common.Node {
+	// Get a new serial number for the binding-identifier.
+	serial_no := r.NewSerialNo()
+	serial_no_str := fmt.Sprintf("%d", serial_no)
+	idNode := &common.Node{
+		Name: common.NameIdentifier,
+		Options: map[string]string{
+			common.OptionSerialNo: serial_no_str,
+			common.OptionName:     fmt.Sprintf("tmp-%s", serial_no_str),
+			common.OptionScope:    string(UnitScope),
+			common.OptionConst:    "true",
+			common.OptionVar:      "false",
+		},
+	}
+	// Create the bind node: bind(id, lambdaNode)
+	bindNode := &common.Node{
+		Name:     common.NameBind,
+		Children: []*common.Node{idNode, path.Node()},
+		Options:  make(map[string]string),
+	}
+	// Replace the lambda node with a reference to the new identifier.
+	path.Parent.Children[path.SiblingPosition] = idNode
+	return bindNode
+}
+
+// collectLambdaPaths traverses the tree and collects common.Path structures to all lambda (fn) nodes.
+// Returns a slice of Path pointers, each representing the location of a lambda in the tree.
+func collectLambdaPaths(node *common.Node, path *common.Path) []*common.Path {
+	list := &common.List[*common.Path]{}
+	collectLambdaPathsInto(node, path, list)
+	return list.Items()
+}
+
+func collectLambdaPathsInto(node *common.Node, path *common.Path, list *common.List[*common.Path]) {
+	if node == nil {
+		return
+	}
+	if node.Name == common.NameFn {
+		list.Add(path)
+	}
+	for i, child := range node.Children {
+		childPath := &common.Path{
+			SiblingPosition: i,
+			Parent:          node,
+			Others:          path,
+		}
+		collectLambdaPathsInto(child, childPath, list)
+	}
 }
 
 func (r *Resolver) closureCaptures() {
 	for closureScope := range r.Closures {
-		node := closureScope.Node
+		partApplyNode := closureScope.Node
 		// Transform the function node into a partapply node with two arguments:
 		// 1. The original function (as a fn node) with additional captured parameters.
 		// 2. An arguments node containing the captured identifiers as id nodes.
 
 		// Create the renumbering mapping and populate as we create the args list.
 		renumber_str := make(map[string]string)
-		// Create the arguments node.
+
+		// Create the arguments node for the partApply.
 		args := &common.Node{
 			Name:     common.NameArguments,
 			Children: []*common.Node{},
 			Options:  make(map[string]string),
 		}
+		// For each captured identifier, create a new id node and add to args.
+		captured := make([]*IdentifierInfo, 0, len(closureScope.Captured))
 		for _, info := range closureScope.Captured {
+			captured = append(captured, info)
+		}
+		for _, info := range captured {
 			next_id := r.nextID
 			r.nextID++
 			next_id_str := fmt.Sprintf("%d", next_id)
@@ -89,18 +198,20 @@ func (r *Resolver) closureCaptures() {
 			args.Children = append(args.Children, arg_node)
 		}
 
+		// The original function node, with added parameters.
 		new_fn_node := &common.Node{
 			Name:     common.NameFn,
-			Children: node.Children,
-			Options:  node.Options,
+			Children: partApplyNode.Children,
+			Options:  partApplyNode.Options,
 		}
 		params := new_fn_node.Children[0]
-		for _, info := range closureScope.Captured {
+		for _, info := range captured {
 			params.Children = append(params.Children, info.toNode(common.ValueInner))
 		}
-		node.Name = common.NamePartApply
-		node.Children = []*common.Node{new_fn_node, args}
-		node.Options = make(map[string]string)
+
+		partApplyNode.Name = common.NamePartApply
+		partApplyNode.Children = []*common.Node{new_fn_node, args}
+		partApplyNode.Options = make(map[string]string)
 
 		// Renumber the captured identifiers in the function body.
 		renumberIdentifiersInNode(new_fn_node, renumber_str)

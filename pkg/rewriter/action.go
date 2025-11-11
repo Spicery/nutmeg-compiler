@@ -11,7 +11,7 @@ type Action interface {
 	// Returns the node (possibly modified or replaced) and a boolean indicating
 	// whether any modification occurred. If modified is false, the returned node
 	// should be ignored and the original used.
-	Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool)
+	Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ type Action interface {
 type ClearOptionsAction struct {
 }
 
-func (a *ClearOptionsAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ClearOptionsAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -32,7 +32,7 @@ func (a *ClearOptionsAction) Apply(pattern *Pattern, childPosition int, node *co
 type NullAction struct {
 }
 
-func (a *NullAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *NullAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	// Continue action does nothing but reports success, allowing the rule to succeed
 	// without modifying the node, so processing can continue to the next rule.
 	return node, false
@@ -42,7 +42,7 @@ type FailAction struct {
 	Message string
 }
 
-func (a *FailAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *FailAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	// Output error message with span information and exit immediately.
 	if node != nil {
 		fmt.Fprintf(os.Stderr, "%s, for node '%s', at line %d, column %d\n", a.Message, node.Name, node.Span.StartLine, node.Span.StartColumn)
@@ -57,7 +57,7 @@ type AssertAction struct {
 	AssertPattern *Pattern
 }
 
-func (a *AssertAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *AssertAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	// Test if the assertion pattern matches the node.
 	matches, _ := a.AssertPattern.Matches(node, path)
 	if !matches {
@@ -75,7 +75,7 @@ type ReplaceValueFromAction struct {
 	From   string
 }
 
-func (a *ReplaceValueFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ReplaceValueFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -88,7 +88,7 @@ type ReplaceValueAction struct {
 	With string
 }
 
-func (a *ReplaceValueAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ReplaceValueAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -101,7 +101,7 @@ type ReplaceNameWithAction struct {
 	With string
 }
 
-func (a *ReplaceNameWithAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ReplaceNameWithAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -132,7 +132,7 @@ func fetchFrom(from string, key *string, node *common.Node) string {
 	return ""
 }
 
-func fetchFromSource(from string, source string, pattern *Pattern, childPosition int, node *common.Node, path *Path) string {
+func fetchFromSource(from string, source string, pattern *Pattern, childPosition int, node *common.Node, path *common.Path) string {
 	switch source {
 	case "self":
 		return fetchFrom(from, pattern.Self.Key, node)
@@ -150,7 +150,7 @@ func fetchFromSource(from string, source string, pattern *Pattern, childPosition
 	return ""
 }
 
-func (a *ReplaceNameFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ReplaceNameFromAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -163,7 +163,7 @@ type ReplaceByChildAction struct {
 	ChildIndex int
 }
 
-func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -177,7 +177,7 @@ func (a *ReplaceByChildAction) Apply(pattern *Pattern, childPosition int, node *
 type InlineChildAction struct {
 }
 
-func (a *InlineChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *InlineChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -203,7 +203,7 @@ type RotateOptionAction struct {
 	Initial string
 }
 
-func (a *RotateOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *RotateOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -227,7 +227,7 @@ type RemoveOptionAction struct {
 	Key string
 }
 
-func (a *RemoveOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *RemoveOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -239,7 +239,7 @@ type SequenceAction struct {
 	Actions []Action
 }
 
-func (a *SequenceAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *SequenceAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -258,7 +258,7 @@ type ChildAction struct {
 	Action Action
 }
 
-func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -266,7 +266,7 @@ func (a *ChildAction) Apply(pattern *Pattern, childPosition int, node *common.No
 		return node, false
 	}
 	child := node.Children[childPosition]
-	new_child, modified := a.Action.Apply(pattern, -1, child, &Path{Parent: node, Others: path})
+	new_child, modified := a.Action.Apply(pattern, -1, child, &common.Path{Parent: node, Others: path})
 	if modified {
 		node.Children[childPosition] = new_child
 		return node, true
@@ -278,7 +278,7 @@ type MergeChildWithNextAction struct {
 	NextTakesPriority bool
 }
 
-func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *MergeChildWithNextAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -319,7 +319,7 @@ type NewNodeChildAction struct {
 	Length   *int
 }
 
-func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *NewNodeChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
@@ -360,7 +360,7 @@ type PermuteChildrenAction struct {
 	NewOrder []int
 }
 
-func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil || len(a.NewOrder) < 2 {
 		return node, false
 	}
@@ -387,7 +387,7 @@ func (a *PermuteChildrenAction) Apply(pattern *Pattern, childPosition int, node 
 type RemoveChildAction struct {
 }
 
-func (a *RemoveChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *Path) (*common.Node, bool) {
+func (a *RemoveChildAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
 	if node == nil {
 		return node, false
 	}
