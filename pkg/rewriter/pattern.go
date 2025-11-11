@@ -68,7 +68,7 @@ func (np *NodePattern) IsEmpty() bool {
 	return np == nil || (np.Name == nil && np.Key == nil && np.Value == nil && np.Count == nil && np.SiblingPosition == nil)
 }
 
-func (np *NodePattern) Matches(node *common.Node, path *Path) bool {
+func (np *NodePattern) Matches(node *common.Node, path *common.Path) bool {
 	if node == nil {
 		return false
 	}
@@ -118,7 +118,7 @@ type Pattern struct {
 	NextChild     *NodePattern `yaml:"nextChild,omitempty"`
 }
 
-func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
+func (p *Pattern) Matches(node *common.Node, path *common.Path) (bool, int) {
 	childPosition := -1
 	if node == nil {
 		return false, childPosition
@@ -140,7 +140,7 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 	if p.Child != nil {
 		matched := false
 		for n, child := range node.Children {
-			if p.Child.Matches(child, &Path{SiblingPosition: n, Parent: node, Others: path}) {
+			if p.Child.Matches(child, &common.Path{SiblingPosition: n, Parent: node, Others: path}) {
 				matched = true
 				childPosition = n
 				break
@@ -152,14 +152,14 @@ func (p *Pattern) Matches(node *common.Node, path *Path) (bool, int) {
 	}
 	if p.PreviousChild != nil && childPosition >= 1 {
 		prevChild := node.Children[childPosition-1]
-		if !p.PreviousChild.Matches(prevChild, &Path{SiblingPosition: childPosition - 1, Parent: node, Others: path}) {
+		if !p.PreviousChild.Matches(prevChild, &common.Path{SiblingPosition: childPosition - 1, Parent: node, Others: path}) {
 			return false, -1
 		}
 	}
 	if p.NextChild != nil && childPosition <= len(node.Children)-2 {
 		nextChild := node.Children[childPosition+1]
 		fmt.Fprintln(os.Stderr, "NextChild:", nextChild.Name)
-		if !p.NextChild.Matches(nextChild, &Path{SiblingPosition: childPosition + 1, Parent: node, Others: path}) {
+		if !p.NextChild.Matches(nextChild, &common.Path{SiblingPosition: childPosition + 1, Parent: node, Others: path}) {
 			return false, -1
 		}
 	}

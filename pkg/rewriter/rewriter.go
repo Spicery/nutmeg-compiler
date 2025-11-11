@@ -9,12 +9,6 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
 
-type Path struct {
-	SiblingPosition int // Position among siblings
-	Parent          *common.Node
-	Others          *Path
-}
-
 type Rule struct {
 	Name      string   `yaml:"name,omitempty"`
 	Pattern   *Pattern `yaml:"match,omitempty"`
@@ -502,7 +496,7 @@ func (r *Rewriter) Rewrite(node *common.Node) (*common.Node, bool) {
 	return node, anyChanged
 }
 
-func (r *RewriterPass) doRewrite(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
+func (r *RewriterPass) doRewrite(node *common.Node, path *common.Path, debug bool) (*common.Node, bool) {
 	if debug {
 		fmt.Fprintf(os.Stderr, "    [%s] Visiting\n", node.Name)
 	}
@@ -518,7 +512,7 @@ func (r *RewriterPass) doRewrite(node *common.Node, path *Path, debug bool) (*co
 	}
 
 	for i := 0; i < len(node.Children); i++ {
-		node.Children[i], changed = r.doRewrite(node.Children[i], &Path{SiblingPosition: i, Parent: node, Others: path}, debug)
+		node.Children[i], changed = r.doRewrite(node.Children[i], &common.Path{SiblingPosition: i, Parent: node, Others: path}, debug)
 		if changed {
 			anyChanged = true
 		}
@@ -532,15 +526,15 @@ func (r *RewriterPass) doRewrite(node *common.Node, path *Path, debug bool) (*co
 	return node, anyChanged
 }
 
-func (r *RewriterPass) downwardsRewrites(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
+func (r *RewriterPass) downwardsRewrites(node *common.Node, path *common.Path, debug bool) (*common.Node, bool) {
 	return applyRules(node, path, r.DownwardsRules, r.DownwardsStartIndex, debug)
 }
 
-func (r *RewriterPass) upwardsRewrites(node *common.Node, path *Path, debug bool) (*common.Node, bool) {
+func (r *RewriterPass) upwardsRewrites(node *common.Node, path *common.Path, debug bool) (*common.Node, bool) {
 	return applyRules(node, path, r.UpwardsRules, r.UpwardsStartIndex, debug)
 }
 
-func applyRules(node *common.Node, path *Path, rules []*Rule, startIndexMap map[string]int, debug bool) (*common.Node, bool) {
+func applyRules(node *common.Node, path *common.Path, rules []*Rule, startIndexMap map[string]int, debug bool) (*common.Node, bool) {
 	// Optimization 1: Start at the first rule that could match this node's name.
 	currentRule := getStartIndex(node.Name, startIndexMap, len(rules))
 
