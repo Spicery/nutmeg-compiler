@@ -1,5 +1,7 @@
 package common
 
+// List is a generic container that holds a sequence of items of any type.
+// It provides methods to add items and retrieve the underlying slice.
 type List[T any] struct {
 	items []T
 }
