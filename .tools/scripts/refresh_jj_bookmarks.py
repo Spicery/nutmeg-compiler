@@ -65,7 +65,7 @@ def create_all_jj_bookmarks(branches):
         create_jj_bookmark(branch)
     print("All bookmarks created.")
 
-EPILOG ='''
+EPILOG = '''
 Examples:
   %(prog)s                    Create bookmarks for the current branch
   %(prog)s --base develop     Use 'develop' as the base branch instead of 'main'
