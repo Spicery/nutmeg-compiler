@@ -14,9 +14,9 @@ tests:
           <part keyword="def">
             <apply kind="parentheses">
               <id name="incr"/>
-              <delimited kind="parentheses">
+              <arguments kind="parentheses">
                 <id name="x"/>
-              </delimited>
+              </arguments>
             </apply>
           </part>
           <part keyword="=&gt;&gt;">
@@ -39,17 +39,17 @@ tests:
           <id name="bar"/>
           <apply kind="parentheses">
             <id name="copy"/>
-            <delimited kind="parentheses">
+            <arguments kind="parentheses">
               <id name="bar"/>
-            </delimited>
+            </arguments>
           </apply>
         </operator>
         <operator name="&lt;--" syntax="infix">
           <apply kind="brackets">
             <id name="bar"/>
-            <delimited kind="brackets">
+            <arguments kind="brackets">
               <number base="10" exponent="0" fraction="" mantissa="0" sign="+"/>
-            </delimited>
+            </arguments>
           </apply>
           <id name="value"/>
         </operator>
@@ -72,9 +72,9 @@ tests:
           <part keyword="switch">
             <apply kind="parentheses">
               <id name="f"/>
-              <delimited kind="parentheses">
+              <arguments kind="parentheses">
                 <id name="x"/>
-              </delimited>
+              </arguments>
             </apply>
           </part>
           <part keyword="case">
@@ -129,11 +129,11 @@ tests:
           <part keyword="def">
             <apply kind="parentheses">
               <id name="quicksortInPlace"/>
-              <delimited kind="parentheses" separator="comma">
+              <arguments kind="parentheses" separator="comma">
                 <id name="A"/>
                 <id name="lo"/>
                 <id name="hi"/>
-              </delimited>
+              </arguments>
             </apply>
           </part>
           <part keyword="=&gt;&gt;">
@@ -149,34 +149,34 @@ tests:
                   <id name="p"/>
                   <apply kind="parentheses">
                     <id name="partition"/>
-                    <delimited kind="parentheses" separator="comma">
+                    <arguments kind="parentheses" separator="comma">
                       <id name="A"/>
                       <id name="lo"/>
                       <id name="hi"/>
-                    </delimited>
+                    </arguments>
                   </apply>
                 </operator>
                 <apply kind="parentheses">
                   <id name="quicksort"/>
-                  <delimited kind="parentheses" separator="comma">
+                  <arguments kind="parentheses" separator="comma">
                     <id name="A"/>
                     <id name="lo"/>
                     <operator name="-" syntax="infix">
                       <id name="p"/>
                       <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
                     </operator>
-                  </delimited>
+                  </arguments>
                 </apply>
                 <apply kind="parentheses">
                   <id name="quicksort"/>
-                  <delimited kind="parentheses" separator="comma">
+                  <arguments kind="parentheses" separator="comma">
                     <id name="A"/>
                     <operator name="+" syntax="infix">
                       <id name="p"/>
                       <number base="10" exponent="0" fraction="" mantissa="1" sign="+"/>
                     </operator>
                     <id name="hi"/>
-                  </delimited>
+                  </arguments>
                 </apply>
               </part>
             </form>
