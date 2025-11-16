@@ -65,6 +65,21 @@ passes:
           replaceName:
             with: syscall
 
+      - name: Infix colon
+        match:
+          self:
+            name: operator
+            key: name
+            value: ":"
+            count: 2
+        action:
+          sequence:
+          - replaceName:
+              with: syscall
+          - replaceValue:
+              key: name
+              with: "=>"
+
       - name: Change ':=' to bind (POP)
         match:
           self:
