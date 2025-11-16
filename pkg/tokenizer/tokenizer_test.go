@@ -800,7 +800,7 @@ world`
 func TestCustomRulesWildcard(t *testing.T) {
 	// Create a custom rules set with a different wildcard
 	rules := DefaultRules()
-	rules.WildcardTokens = map[string]bool{"***": true} // Use '*' as wildcard instead of ':'
+	rules.WildcardTokens = map[string]WildcardTokenData{"***": {Replacement: ""}} // Use '*' as wildcard instead of ':'
 
 	// Build the precomputed lookup map
 	if err := rules.BuildTokenLookup(); err != nil {

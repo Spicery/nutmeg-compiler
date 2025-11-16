@@ -64,7 +64,8 @@ type CompoundRule struct {
 
 // WildcardRule represents a wildcard token rule
 type WildcardRule struct {
-	Text string `yaml:"text"`
+	Text        string `yaml:"text"`
+	Replacement string `yaml:"replacement"`
 }
 
 // OperatorRule represents an operator token rule
@@ -101,7 +102,7 @@ type TokenizerRules struct {
 	PrefixTokens        map[string]PrefixTokenData
 	DelimiterMappings   map[string][]string
 	DelimiterProperties map[string]DelimiterProp
-	WildcardTokens      map[string]bool
+	WildcardTokens      map[string]WildcardTokenData
 	OperatorPrecedences map[string][3]int // [prefix, infix, postfix]
 	MarkTokens          map[string]bool
 
@@ -202,9 +203,9 @@ func ApplyRulesToDefaults(rules *RulesFile) (*TokenizerRules, error) {
 
 	// Apply wildcard rules
 	if len(rules.Wildcard) > 0 {
-		tokenizerRules.WildcardTokens = make(map[string]bool)
+		tokenizerRules.WildcardTokens = make(map[string]WildcardTokenData)
 		for _, rule := range rules.Wildcard {
-			tokenizerRules.WildcardTokens[rule.Text] = true
+			tokenizerRules.WildcardTokens[rule.Text] = WildcardTokenData{Replacement: rule.Replacement}
 		}
 	}
 
@@ -239,6 +240,7 @@ func getDefaultOperatorPrecedences() map[string][3]int {
 	updateOperatorPrecedence(m, "==")
 	updateOperatorPrecedence(m, "..<")
 	updateOperatorPrecedence(m, "..=")
+	updateOperatorPrecedence(m, "=>")
 	updateOperatorPrecedence(m, ":=")
 	updateOperatorPrecedence(m, "<-")
 	updateOperatorPrecedence(m, "<--")
@@ -385,9 +387,10 @@ func getDefaultDelimiterProperties() map[string]DelimiterProp {
 	}
 }
 
-func getDefaultWildcardTokens() map[string]bool {
-	return map[string]bool{
-		":": true,
+func getDefaultWildcardTokens() map[string]WildcardTokenData {
+
+	return map[string]WildcardTokenData{
+		":": {Replacement: "=>"},
 	}
 }
 
@@ -411,8 +414,8 @@ func (rules *TokenizerRules) BuildTokenLookup() error {
 	}
 
 	// Add wildcard tokens
-	for token := range rules.WildcardTokens {
-		if err := addToken(token, CustomWildcard, "wildcard", nil); err != nil {
+	for token, data := range rules.WildcardTokens {
+		if err := addToken(token, CustomWildcard, "wildcard", data); err != nil {
 			return err
 		}
 	}
