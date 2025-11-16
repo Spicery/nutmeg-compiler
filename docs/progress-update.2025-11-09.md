@@ -2,16 +2,11 @@
 
 ## Summary
 
-This weekend I have reached the point where closures are transformed into
-top-level functions that are _partially applied_ to the values being closed
-over. There's quite a lot of unpack here, so let's break it down.
+This weekend I have reached the point where closures are transformed into top-level functions that are _partially applied_ to the values being closed over. There's quite a lot of unpack here, so let's break it down.
 
 ## Example
 
-One of the simplest examples of a closure is the K combinator, a staple of
-functional programming. `K(x)` delivers a closure that when applied to anything,
-discards it and returns `x`. It's not useful itself, of course, but is a common
-"re-plumbing" function.
+One of the simplest examples of a closure is the K combinator, a staple of functional programming. `K(x)` delivers a closure that when applied to anything, discards it and returns `x`. It's not useful itself, of course, but is a common "re-plumbing" function. We will use it to illustrate the key change.
 
 Here's how it might be defined in Nutmeg.
 
@@ -137,9 +132,9 @@ classDef custom_operator fill:#C0FFC0,stroke:#333,stroke-width:2px;
 
 ### Basic Idea
 
-To recap: a closure is a lambda function that refers to _local_ variables that  belong to an enclosing scope. We say that these variables are "captured" by the closure. Closures are a powerful feature of functional programming but are tricky to implement efficiently. The technique employed here is reasonably efficient.
+To recap: a closure is a lambda function that refers to _local_ variables that  belong to an enclosing scope. We say that these variables are "captured" by the closure. Closures are a powerful feature of functional programming but are tricky to implement efficiently. But the technique employed here is reasonably efficient and fairly easy to understand.
 
-The key idea is to eliminate closures in favour of the simple-to-implement partial-application. Partial application takes a function-object F and some values and creates a tiny function-object that when called, pushes the values onto the value stack and then invokes the original F.
+The key idea is to eliminate closures in favour of the easy-to-implement partial-application. Partial application takes a function-object F and some values and creates a tiny function-object that when called, pushes the values onto the value stack and then invokes the original F.
 
 To transform a lambda function C, that happens to be a closure, into a partial application, we add the captured variables as extra parameters. In our little `K` example that means we go from:
 
@@ -177,6 +172,8 @@ Importantly the inner lambda (`fn`) no longer captures any variables because we 
 - If you are familiar with this kind of transformation, you are probably asking what happens if the captured variable is mutable (i.e. `var`). In Nutmeg we forbid that scenario to nudge programmers, as part of Nutmeg's learning-by-doing ethos, into more functional styles of programming. We go into the implications of this decision in the next section.
 
 - The newly introduced variables are at the same level as globals but are deemed to exist in their own "UnitScope" and are only accessible in this unit (i.e. file). This is the mechanism used to avoid possible name clashes. The serial numbering reflects this too.
+
+- If you are wondering how to implement partial-application for Nutmeg, it requires a little bit of dynamic code generation. I usually defer implementing it until I have the code generator sorted out.
 
 
 ## Achieving the effect of var-capture
