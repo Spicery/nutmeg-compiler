@@ -60,6 +60,10 @@ type BridgeTokenData struct {
 	Arity     common.Arity
 }
 
+type WildcardTokenData struct {
+	Replacement string
+}
+
 // Base precedence values for operator characters (from operators.md)
 // Should follow this order: .([{*/%+-<>~!&^|?:=
 var baseOperatorPrecedence = map[rune]int{
@@ -166,8 +170,10 @@ func (t *Tokenizer) addTokenAndManageStack(token *common.Token) error {
 	switch token.Type {
 	case common.StartTokenType:
 		// Push expected tokens for this start token
-		if len(token.Expecting) > 0 {
+		if token.Expecting != nil {
 			t.pushExpecting(token.Expecting)
+		} else {
+			t.pushExpecting([]string{})
 		}
 	case common.EndTokenType:
 		// Pop the expecting stack
@@ -178,6 +184,10 @@ func (t *Tokenizer) addTokenAndManageStack(token *common.Token) error {
 			// If the token has explicit expecting, replace current expectations
 			t.replaceExpecting(token.Expecting)
 		}
+	case common.OpenDelimiterTokenType:
+		t.pushExpecting([]string{})
+	case common.CloseDelimiterTokenType:
+		t.popExpecting()
 	}
 	return nil
 }
@@ -470,7 +480,6 @@ func (t *Tokenizer) matchCustomRules() *common.Token {
 	entry, exists := t.rules.TokenLookup[text]
 	if !exists {
 		if is_identifier {
-
 			// If it's an identifier and no special type, treat as VariableToken
 			t.advance(len(text))
 			return common.NewToken(text, common.VariableTokenType, span)
@@ -478,6 +487,10 @@ func (t *Tokenizer) matchCustomRules() *common.Token {
 		return nil // No matching custom rule
 	}
 
+	return t.lookupText(&entry, span, text)
+}
+
+func (t *Tokenizer) lookupText(entry *CustomRuleEntry, span common.Span, text string) *common.Token {
 	// Process the single rule entry
 	switch entry.Type {
 	case CustomWildcard:
@@ -492,6 +505,15 @@ func (t *Tokenizer) matchCustomRules() *common.Token {
 				// Create a wildcard token that copies attributes from the expected bridge
 				t.advance(len(text))
 				return common.NewWildcardBridgeToken(text, expectedText, bridgeData.Expecting, bridgeData.In, bridgeData.Arity, span)
+			}
+		} else {
+			// TODO: use replacement text!
+			wildcardData := entry.Data.(WildcardTokenData)
+			if wildcardData.Replacement != "" {
+				entry, exists := t.rules.TokenLookup[wildcardData.Replacement]
+				if exists {
+					return t.lookupText(&entry, span, text)
+				}
 			}
 		}
 
