@@ -388,7 +388,6 @@ func getDefaultDelimiterProperties() map[string]DelimiterProp {
 }
 
 func getDefaultWildcardTokens() map[string]WildcardTokenData {
-
 	return map[string]WildcardTokenData{
 		":": {Replacement: "=>"},
 	}
