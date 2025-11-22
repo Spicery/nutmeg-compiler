@@ -159,10 +159,7 @@ func (fcg *FnCodeGenState) rewriteFnNode(node *common.Node) error {
 	bodyNode := node.Children[1]
 	fcg.plantPopArguments(argumentsNode)
 	err := fcg.plantInstructions(bodyNode)
-	// fmt.Println("INSTRUCTIONS", bodyNode.Name, instructions.Items())
-	// fmt.Println("ERROR CHECK", bodyNode.Name, err)
 	if err != nil {
-		// fmt.Println("CLIMBING")
 		return err
 	}
 	fcg.instructions.Add(&common.Node{Name: common.NameReturn})
@@ -215,7 +212,6 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		}
 		fcg.plantPushString(str_value)
 	case common.NameApply:
-		// fmt.Println("NameApply", len(bodyNode.Children))
 		if len(node.Children) == 2 {
 			fn := node.Children[0]
 			args := node.Children[1]
