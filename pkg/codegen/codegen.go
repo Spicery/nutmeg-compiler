@@ -177,7 +177,6 @@ func (fcg *FnCodeGenState) plantPopArguments(argumentsNode *common.Node) {
 	for i := pdnargs - 1; i >= 0; i-- {
 		child := argumentsNode.Children[i]
 		offset := fcg.offset(child.Options[common.OptionSerialNo])
-		// fmt.Println("PLANTING POP FOR ARGUMENT:", child.Options[common.OptionName], "OFFSET:", offset)
 		popArgNode := &common.Node{Name: common.NamePopLocal, Options: map[string]string{common.OptionOffset: fmt.Sprintf("%d", offset)}}
 		fcg.instructions.Add(popArgNode)
 	}
