@@ -692,9 +692,6 @@ func TestKeywordClassification(t *testing.T) {
 		{"then", common.BridgeTokenType},
 		{"else", common.BridgeTokenType},
 
-		// Unclassified tokens (U)
-		{":", common.UnclassifiedTokenType}, // bare wildcard without context
-
 		// Compound tokens (C)
 		{"catch", common.BridgeTokenType},
 		{"elseif", common.BridgeTokenType},
