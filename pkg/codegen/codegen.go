@@ -234,7 +234,6 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 			return fmt.Errorf("apply with != 2 children not implemented")
 		}
 	default:
-		fmt.Println("ERROR FOUND (default case)")
 		return fmt.Errorf("unimplemented node type: %s", node.Name)
 	}
 	return nil
