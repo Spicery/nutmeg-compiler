@@ -197,7 +197,7 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		switch scope {
 		case common.ValueInner, common.ValueOuter:
 			fcg.plantPushLocal(node.Options[common.OptionSerialNo])
-		case "global":
+		case common.ValueGlobal:
 			id_name := node.Options[common.OptionName]
 			fcg.plantPushGlobal(id_name)
 		default:
