@@ -43,22 +43,38 @@ const NameLet = "let"
 const NameIf = "if"
 const NameFor = "for"
 const NameSeq = "seq"
+const NameSysCall = "syscall"
+const NamePopLocal = "pop.local"
+const NamePushLocal = "push.local"
+const NamePushGlobal = "push.global"
+const NamePushInt = "push.int"
+const NamePushString = "push.string"
+const NameReturn = "return"
+const NameStackLength = "stack.length"
 
-const OptionValue = "value"
-const OptionsDecimalValue = "decimal"
-const OptionName = "name"
-const OptionKind = "kind"
-const OptionSeparator = "separator"
+const OptionConst = "const"
 const OptionKeyword = "keyword"
-const OptionSpan = "span"
-const OptionSyntax = "syntax"
+const OptionKind = "kind"
+const OptionName = "name"
 const OptionQuote = "quote"
+const OptionScope = "scope"
+const OptionDecimal = "decimal"
+const OptionSeparator = "separator"
+const OptionSerialNo = "no"
+const OptionSpan = "span"
 const OptionSpecifier = "specifier"
 const OptionSrc = "src"
-const OptionScope = "scope"
-const OptionSerialNo = "no"
+const OptionSyntax = "syntax"
+const OptionValue = "value"
 const OptionVar = "var"
-const OptionConst = "const"
+const OptionOffset = "offset"
+const OptionBase = "base"
+const OptionFraction = "fraction"
+const OptionExponent = "exponent"
+const OptionMantissa = "mantissa"
+const OptionLazy = "lazy"
+const OptionNParams = "nparams"
+const OptionNLocals = "nlocals"
 
 const ValueParentheses = "parentheses"
 const ValueBrackets = "brackets"
@@ -82,6 +98,8 @@ const ValueInner = "inner"
 const ValueOuter = "outer"
 const ValueGlobal = "global"
 const ValueBlank = ""
+const ValueTrue = "true"
+const ValueFalse = "false"
 
 // TrimValue trims a value if it's a token value and trimming is enabled
 func TrimValue(key, value string, trimLength int) string {
@@ -126,4 +144,38 @@ func (n *Node) UpdateSpan() {
 		}
 		n.Span = span
 	}
+}
+
+func (n *Node) ClearChildren() {
+	n.Children = n.Children[:0]
+}
+
+func (n *Node) ToInteger() *string {
+	if n == nil {
+		return nil
+	}
+	if n.Name != NameNumber {
+		return nil
+	}
+	mantissa, mantissa_ok := n.Options[OptionMantissa]
+	if !mantissa_ok {
+		return nil
+	}
+	fraction, fraction_ok := n.Options[OptionFraction]
+	if !fraction_ok {
+		return nil
+	}
+	exponent, exponent_ok := n.Options[OptionExponent]
+	if !exponent_ok {
+		return nil
+	}
+	base, base_ok := n.Options[OptionBase]
+	if !base_ok {
+		return nil
+	}
+
+	if fraction == "" && exponent == "0" && base == "10" {
+		return &mantissa
+	}
+	return nil
 }

@@ -507,7 +507,6 @@ func (t *Tokenizer) lookupText(entry *CustomRuleEntry, span common.Span, text st
 				return common.NewWildcardBridgeToken(text, expectedText, bridgeData.Expecting, bridgeData.In, bridgeData.Arity, span)
 			}
 		} else {
-			// TODO: use replacement text!
 			wildcardData := entry.Data.(WildcardTokenData)
 			if wildcardData.Replacement != "" {
 				entry, exists := t.rules.TokenLookup[wildcardData.Replacement]

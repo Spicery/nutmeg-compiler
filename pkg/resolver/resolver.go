@@ -527,6 +527,7 @@ func (r *Resolver) lookupIdentifier(node *common.Node) (*IdentifierInfo, *Scope,
 	}
 	// Not found - treat as global undefined identifier.
 	info = r.NewGlobalIdentifierInfo(name)
+	node.Options[common.OptionSerialNo] = fmt.Sprintf("%d", info.UniqueID)
 	return info, r.globalScope, nil
 }
 
