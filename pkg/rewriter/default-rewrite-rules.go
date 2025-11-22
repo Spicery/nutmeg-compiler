@@ -487,4 +487,19 @@ passes:
         action:
           fail: "Qualifier was not followed by an identifier"
 
+    upwards:
+      - name: Remove syntax=VALUE
+        match:
+          self:
+            key: syntax
+        action:
+          removeOption: 
+            key: syntax
+
+      - name: Remove bind options
+        match:
+          self:
+            name: bind
+        action:
+          clearOptions: true
 `

@@ -56,6 +56,7 @@ build:
     go build -o bin/nutmeg-check-syntax ./cmd/nutmeg-check-syntax
     go build -o bin/nutmeg-rewriter ./cmd/nutmeg-rewriter
     go build -o bin/nutmeg-resolver ./cmd/nutmeg-resolver
+    go build -o bin/nutmeg-codegen ./cmd/nutmeg-codegen
     go build -o bin/nutmeg-common ./cmd/nutmeg-common
     go build -o bin/nutmeg-convert-tree ./cmd/nutmeg-convert-tree
 
@@ -65,6 +66,7 @@ install:
     go install ./cmd/nutmeg-check-syntax
     go install ./cmd/nutmeg-rewriter
     go install ./cmd/nutmeg-resolver
+    go install ./cmd/nutmeg-codegen
     go install ./cmd/nutmeg-common
     go install ./cmd/nutmeg-convert-tree
 
