@@ -273,7 +273,7 @@ func (fcg *FnCodeGenState) plantCall(node *common.Node, stackLengthTmpVar *Tempo
 
 func (fcg *FnCodeGenState) plantCallGlobal(id_name string, stackLengthTmpVar *TemporaryVariable) {
 	fcg.instructions.Add(&common.Node{
-		Name: "call.global",
+		Name: common.NameCallGlobal,
 		Options: map[string]string{
 			common.OptionOffset: stackLengthTmpVar.OffsetString(),
 			common.OptionName:   id_name,
