@@ -184,7 +184,6 @@ func (fcg *FnCodeGenState) plantPopArguments(argumentsNode *common.Node) {
 }
 
 func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
-	// fmt.Println("PLANTING INSTRUCTIONS FOR NODE:", bodyNode.Name)
 	switch node.Name {
 	case common.NameSysCall:
 		err := fcg.plantChildren(node)
