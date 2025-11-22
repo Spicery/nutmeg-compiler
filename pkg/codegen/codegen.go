@@ -221,7 +221,6 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 			fn := node.Children[0]
 			args := node.Children[1]
 			tmpvar := fcg.plantStackLength()
-			// fmt.Println("APPLY: PLANTING CHILDREN", bodyNode.Children[0].Name)
 			err := fcg.plantChildren(args)
 			if err != nil {
 				return err
