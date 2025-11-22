@@ -159,10 +159,7 @@ func (fcg *FnCodeGenState) rewriteFnNode(node *common.Node) error {
 	bodyNode := node.Children[1]
 	fcg.plantPopArguments(argumentsNode)
 	err := fcg.plantInstructions(bodyNode)
-	// fmt.Println("INSTRUCTIONS", bodyNode.Name, instructions.Items())
-	// fmt.Println("ERROR CHECK", bodyNode.Name, err)
 	if err != nil {
-		// fmt.Println("CLIMBING")
 		return err
 	}
 	fcg.instructions.Add(&common.Node{Name: common.NameReturn})
@@ -177,14 +174,12 @@ func (fcg *FnCodeGenState) plantPopArguments(argumentsNode *common.Node) {
 	for i := pdnargs - 1; i >= 0; i-- {
 		child := argumentsNode.Children[i]
 		offset := fcg.offset(child.Options[common.OptionSerialNo])
-		// fmt.Println("PLANTING POP FOR ARGUMENT:", child.Options[common.OptionName], "OFFSET:", offset)
 		popArgNode := &common.Node{Name: common.NamePopLocal, Options: map[string]string{common.OptionOffset: fmt.Sprintf("%d", offset)}}
 		fcg.instructions.Add(popArgNode)
 	}
 }
 
 func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
-	// fmt.Println("PLANTING INSTRUCTIONS FOR NODE:", bodyNode.Name)
 	switch node.Name {
 	case common.NameSysCall:
 		err := fcg.plantChildren(node)
@@ -217,12 +212,10 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		}
 		fcg.plantPushString(str_value)
 	case common.NameApply:
-		// fmt.Println("NameApply", len(bodyNode.Children))
 		if len(node.Children) == 2 {
 			fn := node.Children[0]
 			args := node.Children[1]
 			tmpvar := fcg.plantStackLength()
-			// fmt.Println("APPLY: PLANTING CHILDREN", bodyNode.Children[0].Name)
 			err := fcg.plantChildren(args)
 			if err != nil {
 				return err
