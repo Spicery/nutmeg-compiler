@@ -150,8 +150,8 @@ func (cg *CodeGenerator) transform(node *common.Node) error {
 	return nil
 }
 
-// rewriteFnNode is a stub function for transforming fn nodes.
-// This is where the actual code generation logic will be implemented.
+// rewriteFnNode transforms a fn node by processing its arguments and body,
+// generating instructions, and updating the node to reflect the generated code.
 func (fcg *FnCodeGenState) rewriteFnNode(node *common.Node) error {
 	argumentsNode := node.Children[0]
 	pdnargs := len(argumentsNode.Children)
