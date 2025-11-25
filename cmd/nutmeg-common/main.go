@@ -128,6 +128,8 @@ func main() {
 	}
 	if srcPath != "" {
 		tree.Options["src"] = srcPath
+	} else if inputFile != "" {
+		tree.Options["src"] = inputFile
 	}
 
 	var node *common.Node
