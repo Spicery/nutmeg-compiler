@@ -362,20 +362,22 @@ func (r *Resolver) handleIdentifier(node *common.Node) error {
 }
 
 // NewIdentifierInfo creates a new IdentifierInfo with a unique ID.
-func (r *Resolver) NewIdentifierInfo(name string) *IdentifierInfo {
+func (r *Resolver) NewIdentifierInfo(name string, origin *string) *IdentifierInfo {
 	uniqueID := r.nextID
 	r.nextID++
 	info := r.currentScope.NewIdentifierInfo(name, uniqueID)
+	info.Origin = origin
 	r.idInfo[uniqueID] = info
 	return info
 }
 
-func (r *Resolver) NewGlobalIdentifierInfo(name string) *IdentifierInfo {
+func (r *Resolver) NewGlobalIdentifierInfo(name string, origin *string) *IdentifierInfo {
 	uniqueID := r.nextID
 	r.nextID++
 	info := r.globalScope.NewIdentifierInfo(name, uniqueID)
 	info.IsAssignable = false
 	info.IsConst = false
+	info.Origin = origin
 	r.idInfo[uniqueID] = info
 	return info
 }
@@ -393,7 +395,8 @@ func (r *Resolver) defineIdentifier(node *common.Node) *IdentifierInfo {
 	}
 
 	// Create and store metadata for this identifier.
-	info := r.NewIdentifierInfo(name)
+	origin := "unit" // This is a placeholder value for the current module name.
+	info := r.NewIdentifierInfo(name, &origin)
 	q, ok := node.Options[VarOption]
 	if ok {
 		info.IsAssignable = (q == "true")
@@ -424,6 +427,16 @@ func (r *Resolver) annotate(node *common.Node) error {
 		// Check if this is the last reference to this identifier
 		if info.LastReference == node {
 			node.Options[LastOption] = "true"
+		}
+
+		if info.ScopeType == common.ValueGlobal {
+			if info.Origin == nil {
+				// Is it a built-in? This section is a placeholder for a proper module.
+				switch info.Name {
+				case "println":
+					node.Name = common.NameSysFn
+				}
+			}
 		}
 	}
 
@@ -526,7 +539,7 @@ func (r *Resolver) lookupIdentifier(node *common.Node) (*IdentifierInfo, *Scope,
 		return info, scope, nil
 	}
 	// Not found - treat as global undefined identifier.
-	info = r.NewGlobalIdentifierInfo(name)
+	info = r.NewGlobalIdentifierInfo(name, nil)
 	node.Options[common.OptionSerialNo] = fmt.Sprintf("%d", info.UniqueID)
 	return info, r.globalScope, nil
 }

@@ -502,4 +502,15 @@ passes:
             name: bind
         action:
           clearOptions: true
-`
+
+      - name: Annotations
+        match:
+          parent:
+            name: unit
+          self:
+            name: delimited
+            key: kind
+            value: brackets
+        action:
+          replaceName:
+            with: annotations`

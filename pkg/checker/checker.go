@@ -64,6 +64,9 @@ func (c *Checker) Check(node *common.Node) bool {
 		return false
 	}
 
+	// TODO: The top-level children must either be:
+	//  bind or annotations.
+
 	c.validateChildren(node)
 
 	return len(c.Issues) == 0 && len(c.Bugs) == 0
