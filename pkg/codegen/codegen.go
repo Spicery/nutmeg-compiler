@@ -182,12 +182,13 @@ func (fcg *FnCodeGenState) plantPopArguments(argumentsNode *common.Node) {
 func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 	switch node.Name {
 	case common.NameSysCall:
+		tmpvar := fcg.plantStackLength()
 		err := fcg.plantChildren(node)
 		if err != nil {
 			return err
 		}
 		name := node.Options[common.OptionName]
-		fcg.plantSysCall(name)
+		fcg.plantSysCall(name, tmpvar)
 	case common.NameIdentifier:
 		scope := node.Options[common.OptionScope]
 		switch scope {
@@ -261,6 +262,10 @@ func (fcg *FnCodeGenState) plantCall(node *common.Node, stackLengthTmpVar *Tempo
 		default:
 			return fmt.Errorf("unknown identifier scope in call: %s", scope)
 		}
+	case common.NameSysFn:
+		sysfn_name := node.Options[common.OptionName]
+		fcg.plantSysCall(sysfn_name, stackLengthTmpVar)
+		return nil
 	default:
 		return fmt.Errorf("unimplemented call target node: %s", node.Name)
 	}
@@ -268,7 +273,7 @@ func (fcg *FnCodeGenState) plantCall(node *common.Node, stackLengthTmpVar *Tempo
 
 func (fcg *FnCodeGenState) plantCallGlobal(id_name string, stackLengthTmpVar *TemporaryVariable) {
 	fcg.instructions.Add(&common.Node{
-		Name: common.NameCallGlobal,
+		Name: common.NameCallGlobalCounted,
 		Options: map[string]string{
 			common.OptionOffset: stackLengthTmpVar.OffsetString(),
 			common.OptionName:   id_name,
@@ -287,8 +292,15 @@ func (fcg *FnCodeGenState) plantPushString(value string) {
 	fcg.instructions.Add(pushString)
 }
 
-func (fcg *FnCodeGenState) plantSysCall(syscallName string) {
-	syscallNode := &common.Node{Name: common.NameSysCall, Options: map[string]string{common.OptionName: syscallName}, Children: []*common.Node{}}
+func (fcg *FnCodeGenState) plantSysCall(syscallName string, stackLengthTmpVar *TemporaryVariable) {
+	syscallNode := &common.Node{
+		Name: common.NameSysCallCounted,
+		Options: map[string]string{
+			common.OptionName:   syscallName,
+			common.OptionOffset: stackLengthTmpVar.OffsetString(),
+		},
+		Children: []*common.Node{},
+	}
 	fcg.instructions.Add(syscallNode)
 }
 

@@ -194,6 +194,16 @@ func main() {
 		tree, _ = r.Rewrite(tree)
 	}
 
+	// TODO: Should the checking be HERE?
+	// Phase 3.5: Syntax checking
+	{
+		// c := checker.NewChecker()
+		// if !c.Check(tree) {
+		// 	c.ReportErrors()
+		// 	os.Exit(1)
+		// }
+	}
+
 	// Determine output format.
 	printFunc := common.PickPrintFunc(format)
 

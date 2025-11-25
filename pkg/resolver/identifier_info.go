@@ -27,6 +27,7 @@ type IdentifierInfo struct {
 	IsProtected   bool         // Whether this identifier can be shadowed.
 	LastReference *common.Node // The position of the last reference in the AST traversal.
 	DefiningScope *Scope       // The scope where this identifier is defined.
+	Origin        *string      // Optional origin information (i.e., module name).
 }
 
 func (info *IdentifierInfo) toNode(stype ScopeType) *common.Node {
