@@ -9,37 +9,37 @@ import (
 	"gorm.io/gorm"
 )
 
-// EntryPoint represents a top-level entry point in the bundle.
-type EntryPoint struct {
-	IdName string `gorm:"primaryKey"`
-}
+// // EntryPoint represents a top-level entry point in the bundle.
+// type EntryPoint struct {
+// 	IdName string `gorm:"primaryKey"`
+// }
 
-// DependsOn represents a dependency relationship between identifiers.
-type DependsOn struct {
-	IdName string `gorm:"primaryKey;index"`
-	Needs  string `gorm:"primaryKey;index"`
-}
+// // DependsOn represents a dependency relationship between identifiers.
+// type DependsOn struct {
+// 	IdName string `gorm:"primaryKey;index"`
+// 	Needs  string `gorm:"primaryKey;index"`
+// }
 
-// Binding represents a value binding in the bundle.
-type Binding struct {
-	IdName   string `gorm:"primaryKey"`
-	Lazy     bool
-	Value    string
-	FileName string
-}
+// // Binding represents a value binding in the bundle.
+// type Binding struct {
+// 	IdName   string `gorm:"primaryKey"`
+// 	Lazy     bool
+// 	Value    string
+// 	FileName string
+// }
 
-// SourceFile stores the original source file contents.
-type SourceFile struct {
-	FileName string `gorm:"primaryKey"`
-	Contents string
-}
+// // SourceFile stores the original source file contents.
+// type SourceFile struct {
+// 	FileName string `gorm:"primaryKey"`
+// 	Contents string
+// }
 
-// Annotation stores metadata about bindings.
-type Annotation struct {
-	IdName          string `gorm:"primaryKey;index"`
-	AnnotationKey   string `gorm:"primaryKey"`
-	AnnotationValue string
-}
+// // Annotation stores metadata about bindings.
+// type Annotation struct {
+// 	IdName          string `gorm:"primaryKey;index"`
+// 	AnnotationKey   string `gorm:"primaryKey"`
+// 	AnnotationValue string
+// }
 
 // Bundler handles the bundling process.
 type Bundler struct {
@@ -65,25 +65,12 @@ func NewBundler(dbPath string) (*Bundler, error) {
 
 // Migrate performs database migrations.
 func (b *Bundler) Migrate() error {
-	return b.db.AutoMigrate(
-		&EntryPoint{},
-		&DependsOn{},
-		&Binding{},
-		&SourceFile{},
-		&Annotation{},
-	)
+	return Migrate(b.db)
 }
 
 // CheckMigration checks if the database schema is up to date.
 func (b *Bundler) CheckMigration() (bool, error) {
-	// Check if all tables exist
-	tables := []string{"entry_points", "depends_ons", "bindings", "source_files", "annotations"}
-	for _, table := range tables {
-		if !b.db.Migrator().HasTable(table) {
-			return false, nil
-		}
-	}
-	return true, nil
+	return CheckMigration(b.db)
 }
 
 // ProcessUnit processes a unit node and adds its contents to the bundle.
@@ -111,6 +98,7 @@ func (b *Bundler) ProcessUnit(unit *common.Node) error {
 
 		default:
 			// Ignore other nodes for now.
+			fmt.Printf("Ignoring top-level node: %s\n", child.Name)
 		}
 	}
 
@@ -126,6 +114,8 @@ func (b *Bundler) processAnnotations(annotationsNode *common.Node) error {
 			key := child.Options[common.OptionName]
 			value := "" // Value is not used at present, as per task description.
 			b.annotations = append(b.annotations, struct{ key, value string }{key, value})
+		} else {
+			fmt.Println("Skipping annotation:", child.Name)
 		}
 	}
 
@@ -134,17 +124,17 @@ func (b *Bundler) processAnnotations(annotationsNode *common.Node) error {
 
 // processBind processes a bind node and inserts/updates the database.
 func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
-	if len(bindNode.Children) < 2 {
-		return fmt.Errorf("bind node must have at least 2 children")
+	if len(bindNode.Children) != 2 {
+		return fmt.Errorf("bind node must have exactly 2 children")
 	}
 
-	// First child should be an <id> node.
+	// First child must be an <id> node.
 	idNode := bindNode.Children[0]
 	if idNode.Name != common.NameIdentifier {
 		return fmt.Errorf("expected id node, got %s", idNode.Name)
 	}
 
-	// Second child should be an <fn> node (or other value node).
+	// Second child must be an <fn> node.
 	valueNode := bindNode.Children[1]
 
 	// Extract binding information.
