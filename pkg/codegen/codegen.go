@@ -87,6 +87,8 @@ func (cg *CodeGenerator) Generate(root *common.Node) error {
 				if err != nil {
 					return err
 				}
+			case common.NameAnnotations:
+				// Annotations are ignored for now.
 			default:
 				return fmt.Errorf("unimplemented top-level node: %s", child.Name)
 			}
@@ -226,6 +228,20 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 				return err
 			}
 			fcg.FreeTemporaryVariable(tmpvar)
+		} else {
+			return fmt.Errorf("apply with != 2 children not implemented")
+		}
+	case common.NamePartApply:
+		if len(node.Children) == 2 {
+			fn := node.Children[0]
+			args := node.Children[1]
+			tmpvar := fcg.plantStackLength()
+			err := fcg.plantChildren(args)
+			fcg.plantInstructions(fn)
+			if err != nil {
+				return err
+			}
+			fcg.plantSysCall(common.NamePartApply, tmpvar)
 		} else {
 			return fmt.Errorf("apply with != 2 children not implemented")
 		}

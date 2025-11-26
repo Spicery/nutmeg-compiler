@@ -54,6 +54,7 @@ const NamePushString = "push.string"
 const NameReturn = "return"
 const NameStackLength = "stack.length"
 const NameCallGlobalCounted = "call.global.counted"
+const NameAnnotations = "annotations"
 
 const OptionConst = "const"
 const OptionKeyword = "keyword"
