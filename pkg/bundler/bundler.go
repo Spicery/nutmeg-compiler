@@ -9,38 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// // EntryPoint represents a top-level entry point in the bundle.
-// type EntryPoint struct {
-// 	IdName string `gorm:"primaryKey"`
-// }
-
-// // DependsOn represents a dependency relationship between identifiers.
-// type DependsOn struct {
-// 	IdName string `gorm:"primaryKey;index"`
-// 	Needs  string `gorm:"primaryKey;index"`
-// }
-
-// // Binding represents a value binding in the bundle.
-// type Binding struct {
-// 	IdName   string `gorm:"primaryKey"`
-// 	Lazy     bool
-// 	Value    string
-// 	FileName string
-// }
-
-// // SourceFile stores the original source file contents.
-// type SourceFile struct {
-// 	FileName string `gorm:"primaryKey"`
-// 	Contents string
-// }
-
-// // Annotation stores metadata about bindings.
-// type Annotation struct {
-// 	IdName          string `gorm:"primaryKey;index"`
-// 	AnnotationKey   string `gorm:"primaryKey"`
-// 	AnnotationValue string
-// }
-
 // Bundler handles the bundling process.
 type Bundler struct {
 	db          *gorm.DB
@@ -141,10 +109,25 @@ func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
 	idName := idNode.Options[common.OptionName]
 	lazy := idNode.Options[common.OptionLazy] == "true"
 
-	// Serialize the value node to JSON.
-	valueJSON, err := json.Marshal(valueNode)
-	if err != nil {
-		return fmt.Errorf("failed to serialize value node: %w", err)
+	// Convert the value node to JSON.
+	var valueJSON []byte
+	if valueNode.Name == common.NameFn {
+		// Convert <fn> node to FunctionObject.
+		funcObj, err := ConvertFnToFunctionObject(valueNode)
+		if err != nil {
+			return fmt.Errorf("failed to convert function: %w", err)
+		}
+		valueJSON, err = json.Marshal(funcObj)
+		if err != nil {
+			return fmt.Errorf("failed to serialize function object: %w", err)
+		}
+	} else {
+		// For non-function values, serialize the node directly.
+		var err error
+		valueJSON, err = json.Marshal(valueNode)
+		if err != nil {
+			return fmt.Errorf("failed to serialize value node: %w", err)
+		}
 	}
 
 	// Prepare filename (use srcPath or NULL).
