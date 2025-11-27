@@ -66,20 +66,72 @@ func convertNodesToInstructions(nodes []*common.Node) ([]Instruction, error) {
 func collectInstructions(node *common.Node) ([]Instruction, error) {
 	// Check if this is an instruction node.
 	switch node.Name {
-	case common.NamePushInt,
-		common.NamePushString,
-		common.NameStackLength,
-		common.NamePopLocal,
-		common.NamePushLocal,
-		common.NamePushGlobal,
-		common.NameReturn,
-		common.NameSysCallCounted,
-		common.NameCallGlobalCounted:
-		// This is a recognized instruction node.
-		return []Instruction{{
-			Name:    node.Name,
-			Options: copyOptions(node.Options),
-		}}, nil
+	case common.NamePushInt:
+		value, err := getIntOption(node, common.OptionDecimal)
+		if err != nil {
+			return nil, fmt.Errorf("push.int missing value: %w", err)
+		}
+		return []Instruction{NewPushInt(value)}, nil
+
+	case common.NamePushString:
+		value, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("push.string missing value: %w", err)
+		}
+		return []Instruction{NewPushString(value)}, nil
+
+	case common.NameStackLength:
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("stack.length missing offset: %w", err)
+		}
+		return []Instruction{NewStackLength(offset)}, nil
+
+	case common.NamePopLocal:
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("pop.local missing offset: %w", err)
+		}
+		return []Instruction{NewPopLocal(offset)}, nil
+
+	case common.NamePushLocal:
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("push.local missing offset: %w", err)
+		}
+		return []Instruction{NewPushLocal(offset)}, nil
+
+	case common.NamePushGlobal:
+		name, err := getStringOption(node, common.OptionName)
+		if err != nil {
+			return nil, fmt.Errorf("push.global missing name: %w", err)
+		}
+		return []Instruction{NewPushGlobal(name)}, nil
+
+	case common.NameReturn:
+		return []Instruction{NewReturn()}, nil
+
+	case common.NameSysCallCounted:
+		name, err := getStringOption(node, common.OptionName)
+		if err != nil {
+			return nil, fmt.Errorf("syscall.counted missing name: %w", err)
+		}
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("syscall.counted missing offset: %w", err)
+		}
+		return []Instruction{NewSyscallCounted(name, offset)}, nil
+
+	case common.NameCallGlobalCounted:
+		name, err := getStringOption(node, common.OptionName)
+		if err != nil {
+			return nil, fmt.Errorf("call.global.counted missing name: %w", err)
+		}
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("call.global.counted missing offset: %w", err)
+		}
+		return []Instruction{NewCallGlobalCounted(name, offset)}, nil
 
 	default:
 		// For container nodes (like <seq>, <arguments>, etc.), recursively collect instructions from children.
@@ -92,14 +144,24 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 	}
 }
 
-// copyOptions creates a copy of the options map.
-func copyOptions(options map[string]string) map[string]string {
-	if len(options) == 0 {
-		return nil
+// getStringOption extracts a string option from a node.
+func getStringOption(node *common.Node, key string) (string, error) {
+	value, ok := node.Options[key]
+	if !ok {
+		return "", fmt.Errorf("missing option: %s", key)
 	}
-	copied := make(map[string]string, len(options))
-	for k, v := range options {
-		copied[k] = v
+	return value, nil
+}
+
+// getIntOption extracts an integer option from a node.
+func getIntOption(node *common.Node, key string) (int, error) {
+	valueStr, ok := node.Options[key]
+	if !ok {
+		return 0, fmt.Errorf("missing option: %s", key)
 	}
-	return copied
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid integer value for %s: %w", key, err)
+	}
+	return value, nil
 }
