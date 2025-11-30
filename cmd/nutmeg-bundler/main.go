@@ -55,6 +55,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Check if the bundle file exists.
+	_, err := os.Stat(bundleFile)
+	fileExists := err == nil
+
 	// Create bundler.
 	b, err := bundler.NewBundler(bundleFile)
 	if err != nil {
@@ -71,17 +75,29 @@ func main() {
 	}
 
 	if !upToDate {
-		if !migrate {
-			fmt.Fprintf(os.Stderr, "Error: database schema is not up to date. Use --migrate to update.\n")
-			os.Exit(1)
-		}
+		// If the file didn't exist before, auto-migrate.
+		// If it existed but schema is out of date, require --migrate flag.
+		if !fileExists {
+			// Fresh database - auto-migrate.
+			if err := b.Migrate(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to migrate database: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Fprintf(os.Stderr, "Database initialized successfully.\n")
+		} else {
+			// Existing database needs migration.
+			if !migrate {
+				fmt.Fprintf(os.Stderr, "Error: database schema is not up to date. Use --migrate to update.\n")
+				os.Exit(1)
+			}
 
-		// Perform migration.
-		if err := b.Migrate(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: failed to migrate database: %v\n", err)
-			os.Exit(1)
+			// Perform migration.
+			if err := b.Migrate(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to migrate database: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Fprintf(os.Stderr, "Database migration completed successfully.\n")
 		}
-		fmt.Fprintf(os.Stderr, "Database migration completed successfully.\n")
 	}
 
 	// Open input.
