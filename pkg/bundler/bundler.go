@@ -177,6 +177,17 @@ func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
 		if result.Error != nil {
 			return fmt.Errorf("failed to save annotation: %w", result.Error)
 		}
+
+		// If annotation key is "main", create an entry point.
+		if ann.key == "main" {
+			entryPoint := EntryPoint{
+				IdName: idName,
+			}
+			result := b.db.Save(&entryPoint)
+			if result.Error != nil {
+				return fmt.Errorf("failed to save entry point: %w", result.Error)
+			}
+		}
 	}
 
 	// Clear annotations after processing.
