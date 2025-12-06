@@ -235,6 +235,24 @@ func (a *RemoveOptionAction) Apply(pattern *Pattern, childPosition int, node *co
 	return node, true
 }
 
+type RenameOptionAction struct {
+	From string
+	To   string
+}
+
+func (a *RenameOptionAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
+	if node == nil {
+		return node, false
+	}
+	value, exists := node.Options[a.From]
+	if !exists {
+		return node, false
+	}
+	node.Options[a.To] = value
+	delete(node.Options, a.From)
+	return node, true
+}
+
 type SequenceAction struct {
 	Actions []Action
 }

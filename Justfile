@@ -82,3 +82,6 @@ rules:
 
 jj:
     python3 ./.tools/scripts/refresh_jj_bookmarks.py --base main --dry-run
+
+hello:
+    cat snippets/helloworld.nutmeg | go run ./cmd/nutmeg-common | go run ./cmd/nutmeg-resolver | go run ./cmd/nutmeg-codegen | go run ./cmd/nutmeg-bundler/ --bundle helloworld.bundle

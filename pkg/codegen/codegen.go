@@ -189,7 +189,7 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		if err != nil {
 			return err
 		}
-		name := node.Options[common.OptionName]
+		name := node.Options[common.OptionSysFn]
 		fcg.plantSysCall(name, tmpvar)
 	case common.NameIdentifier:
 		scope := node.Options[common.OptionScope]
@@ -279,7 +279,7 @@ func (fcg *FnCodeGenState) plantCall(node *common.Node, stackLengthTmpVar *Tempo
 			return fmt.Errorf("unknown identifier scope in call: %s", scope)
 		}
 	case common.NameSysFn:
-		sysfn_name := node.Options[common.OptionName]
+		sysfn_name := node.Options[common.OptionSysFn]
 		fcg.plantSysCall(sysfn_name, stackLengthTmpVar)
 		return nil
 	default:
@@ -312,7 +312,7 @@ func (fcg *FnCodeGenState) plantSysCall(syscallName string, stackLengthTmpVar *T
 	syscallNode := &common.Node{
 		Name: common.NameSysCallCounted,
 		Options: map[string]string{
-			common.OptionName:   syscallName,
+			common.OptionSysFn:  syscallName,
 			common.OptionOffset: stackLengthTmpVar.OffsetString(),
 		},
 		Children: []*common.Node{},

@@ -44,6 +44,7 @@ type ActionConfig struct {
 	InlineChild        bool                `yaml:"inlineChild,omitempty"`
 	RotateOption       *RotateOptionConfig `yaml:"rotateOption,omitempty"`
 	RemoveOption       *RemoveOptionConfig `yaml:"removeOption,omitempty"`
+	RenameOption       *RenameOptionConfig `yaml:"renameOption,omitempty"`
 	Sequence           []ActionConfig      `yaml:"sequence,omitempty"`
 	ChildAction        *ActionConfig       `yaml:"childAction,omitempty"`
 	RemoveChild        bool                `yaml:"removeChild,omitempty"`
@@ -72,6 +73,11 @@ type RotateOptionConfig struct {
 	Key     string   `yaml:"key"`
 	Values  []string `yaml:"values"`
 	Initial string   `yaml:"initial,omitempty"`
+}
+
+type RenameOptionConfig struct {
+	From string `yaml:"from"`
+	To   string `yaml:"to"`
 }
 
 type ReplaceNameConfig struct {
@@ -118,6 +124,9 @@ func (ac ActionConfig) Validate() error {
 		count++
 	}
 	if ac.RemoveOption != nil {
+		count++
+	}
+	if ac.RenameOption != nil {
 		count++
 	}
 	if len(ac.Sequence) > 0 {
@@ -236,6 +245,15 @@ func (ac ActionConfig) ToAction() (Action, error) {
 			}, nil
 		}
 		return nil, fmt.Errorf("invalid RemoveOptionConfig: key must be set")
+	}
+	if ac.RenameOption != nil {
+		if ac.RenameOption.From != "" && ac.RenameOption.To != "" {
+			return &RenameOptionAction{
+				From: ac.RenameOption.From,
+				To:   ac.RenameOption.To,
+			}, nil
+		}
+		return nil, fmt.Errorf("invalid RenameOptionConfig: both 'from' and 'to' must be set")
 	}
 	if len(ac.Sequence) > 0 {
 		actions := []Action{}

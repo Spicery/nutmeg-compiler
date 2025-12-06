@@ -112,7 +112,7 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 		return []Instruction{NewReturn()}, nil
 
 	case common.NameSysCallCounted:
-		name, err := getStringOption(node, common.OptionName)
+		name, err := getStringOption(node, common.OptionSysFn)
 		if err != nil {
 			return nil, fmt.Errorf("syscall.counted missing name: %w", err)
 		}

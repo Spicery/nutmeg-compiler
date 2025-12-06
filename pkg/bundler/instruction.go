@@ -15,8 +15,7 @@ type Instruction struct {
 	Value *string `json:"value,omitempty"`
 
 	// SyscallCounted, CallGlobalCounted.
-	Name  *string `json:"name,omitempty"`
-	NArgs *int    `json:"nargs,omitempty"`
+	Name *string `json:"name,omitempty"`
 }
 
 // FunctionObject represents a compiled function with its metadata and instructions.
@@ -65,10 +64,10 @@ func NewReturn() Instruction {
 
 // NewSyscallCounted creates a syscall.counted instruction.
 func NewSyscallCounted(name string, nargs int) Instruction {
-	return Instruction{Type: "syscall.counted", Name: &name, NArgs: &nargs}
+	return Instruction{Type: "syscall.counted", Name: &name, Index: &nargs}
 }
 
 // NewCallGlobalCounted creates a call.global.counted instruction.
 func NewCallGlobalCounted(name string, nargs int) Instruction {
-	return Instruction{Type: "call.global.counted", Name: &name, NArgs: &nargs}
+	return Instruction{Type: "call.global.counted", Name: &name, Index: &nargs}
 }
