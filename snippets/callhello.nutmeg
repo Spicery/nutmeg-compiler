@@ -1,0 +1,8 @@
+def hello() =>>
+    println("Hello, world!")
+enddef
+
+[main]
+def callhello() =>>
+    hello()
+enddef

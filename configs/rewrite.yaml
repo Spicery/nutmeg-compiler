@@ -74,8 +74,18 @@ passes:
           - replaceName:
               with: syscall
           - replaceValue:
-              key: name
+              key: sysfn
               with: "=>"
+
+      - name: Alter syscall@name to syscall@sysfn
+        match:
+          self:
+            name: syscall
+            key: name
+        action:
+          renameOption:
+            from: name
+            to: sysfn
 
       - name: Change ':=' to bind (POP)
         match:

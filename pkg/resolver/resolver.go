@@ -435,6 +435,8 @@ func (r *Resolver) annotate(node *common.Node) error {
 				switch info.Name {
 				case "println":
 					node.Name = common.NameSysFn
+					node.Options[common.OptionSysFn] = node.Options[common.OptionName]
+					delete(node.Options, common.OptionName)
 				}
 			}
 		}

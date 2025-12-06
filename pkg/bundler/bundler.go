@@ -111,6 +111,7 @@ func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
 
 	// Convert the value node to JSON.
 	var valueJSON []byte
+
 	if valueNode.Name == common.NameFn {
 		// Convert <fn> node to FunctionObject.
 		funcObj, err := ConvertFnToFunctionObject(valueNode)
@@ -128,7 +129,11 @@ func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
 		if err != nil {
 			return fmt.Errorf("failed to serialize value node: %w", err)
 		}
+
 	}
+
+	// Find all references to variables in the function body.
+	idrefs := findIdentifierReferences(valueNode)
 
 	// Prepare filename (use srcPath or NULL).
 	fileName := ""
@@ -142,6 +147,18 @@ func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
 		Lazy:     lazy,
 		Value:    string(valueJSON),
 		FileName: fileName,
+	}
+
+	// Upsert the depends-on relationships.
+	for _, refName := range idrefs {
+		dependency := DependsOn{
+			IdName: idName,
+			Needs:  refName,
+		}
+		result := b.db.Save(&dependency)
+		if result.Error != nil {
+			return fmt.Errorf("failed to save dependency relationship: %w", result.Error)
+		}
 	}
 
 	result := b.db.Save(&binding)
@@ -175,4 +192,33 @@ func (b *Bundler) Close() error {
 		return err
 	}
 	return sqlDB.Close()
+}
+
+// findIdentifierReferences traverses a code tree and collects all unique identifier
+// references. It returns a slice of identifier names that are referenced
+// in the given node and its descendants, with no duplicates.
+func findIdentifierReferences(node *common.Node) []string {
+	seen := make(map[string]bool)
+	var references []string
+	findIdentifierReferencesRecursive(node, &references, seen)
+	return references
+}
+
+// findIdentifierReferencesRecursive is a helper function that recursively
+// traverses the node tree and collects identifier names, avoiding duplicates.
+func findIdentifierReferencesRecursive(node *common.Node, references *[]string, seen map[string]bool) {
+	if node == nil {
+		return
+	}
+
+	// If this is an instruction that references an identifier, record it.
+	if name, ok := node.Options[common.OptionName]; ok {
+		seen[name] = true
+		*references = append(*references, name)
+	}
+
+	// Recursively process all children.
+	for _, child := range node.Children {
+		findIdentifierReferencesRecursive(child, references, seen)
+	}
 }
