@@ -108,6 +108,17 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 		}
 		return []Instruction{NewPushGlobal(name)}, nil
 
+	case common.NameDone:
+		name, err := getStringOption(node, common.OptionName)
+		if err != nil {
+			return nil, fmt.Errorf("done missing name")
+		}
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("done missing offset: %w", err)
+		}
+		return []Instruction{NewDone(name, offset)}, nil
+
 	case common.NameReturn:
 		return []Instruction{NewReturn()}, nil
 
