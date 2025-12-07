@@ -107,7 +107,7 @@ func (b *Bundler) processBind(bindNode *common.Node, srcPath string) error {
 
 	// Extract binding information.
 	idName := idNode.Options[common.OptionName]
-	lazy := idNode.Options[common.OptionLazy] == "true"
+	lazy := bindNode.Options[common.OptionLazy] == "true"
 
 	// Convert the value node to JSON.
 	var valueJSON []byte
