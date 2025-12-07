@@ -54,7 +54,11 @@ func NewPushLocal(offset int) Instruction {
 
 // NewPushGlobal creates a push.global instruction.
 func NewPushGlobal(name string) Instruction {
-	return Instruction{Type: "push.global", Value: &name}
+	return Instruction{Type: "push.global", Name: &name}
+}
+
+func NewDone(name string, offset int) Instruction {
+	return Instruction{Type: "done", Name: &name, Index: &offset}
 }
 
 // NewReturn creates a return instruction.

@@ -111,7 +111,18 @@ func (cg *CodeGenerator) generateBind(bindNode *common.Node) error {
 	case common.NameFn:
 		return cg.transform(valueNode)
 	default:
+		idNode := bindNode.Children[0]
+		if idNode.Name != common.NameIdentifier {
+			return fmt.Errorf("expected id node, got %s", idNode.Name)
+		}
 		bindNode.Options[common.OptionLazy] = common.ValueTrue
+		in_progress := &common.Node{
+			Name: common.NameSetInProgress,
+			Options: map[string]string{
+				common.OptionName: idNode.Options[common.OptionName],
+			},
+			Children: []*common.Node{valueNode},
+		}
 		fn_node := &common.Node{
 			Name:    common.NameFn,
 			Options: map[string]string{},
@@ -121,7 +132,7 @@ func (cg *CodeGenerator) generateBind(bindNode *common.Node) error {
 					Options:  map[string]string{},
 					Children: []*common.Node{},
 				},
-				valueNode,
+				in_progress,
 			},
 		}
 		bindNode.Children[1] = fn_node
@@ -245,6 +256,18 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		} else {
 			return fmt.Errorf("apply with != 2 children not implemented")
 		}
+	case common.NameSetInProgress:
+		if len(node.Children) != 1 {
+			return fmt.Errorf("inprogress node must have exactly 1 child")
+		}
+		name := node.Options[common.OptionName]
+		fcg.plantInProgress(name)
+		tmpvar := fcg.plantStackLength()
+		err := fcg.plantInstructions(node.Children[0])
+		if err != nil {
+			return err
+		}
+		fcg.plantDone(name, tmpvar)
 	default:
 		return fmt.Errorf("unimplemented node type: %s", node.Name)
 	}
@@ -259,6 +282,27 @@ func (fcg *FnCodeGenState) plantChildren(node *common.Node) error {
 		}
 	}
 	return nil
+}
+
+func (fcg *FnCodeGenState) plantInProgress(name string) {
+	fcg.instructions.Add(&common.Node{
+		Name: common.NameInProgress,
+		Options: map[string]string{
+			common.OptionName: name,
+		},
+		Children: []*common.Node{},
+	})
+}
+
+func (fcg *FnCodeGenState) plantDone(name string, stackLengthTmpVar *TemporaryVariable) {
+	fcg.instructions.Add(&common.Node{
+		Name: common.NameDone,
+		Options: map[string]string{
+			common.OptionName:   name,
+			common.OptionOffset: stackLengthTmpVar.OffsetString(),
+		},
+		Children: []*common.Node{},
+	})
 }
 
 func (fcg *FnCodeGenState) plantCall(node *common.Node, stackLengthTmpVar *TemporaryVariable) error {
