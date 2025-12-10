@@ -1,8 +1,6 @@
 message := "Hello, world!"
 
-def hello() =>>
-    println(message)
-enddef
+hello := fn() =>> println(message) endfn
 
 [main]
 def callhello() =>>
