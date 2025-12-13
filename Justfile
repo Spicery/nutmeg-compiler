@@ -59,6 +59,8 @@ build:
     go build -o bin/nutmeg-codegen ./cmd/nutmeg-codegen
     go build -o bin/nutmeg-common ./cmd/nutmeg-common
     go build -o bin/nutmeg-convert-tree ./cmd/nutmeg-convert-tree
+    go build -o bin/nutmeg-bundler ./cmd/nutmeg-bundler
+    go build -o bin/nutmeg-compiler ./cmd/nutmeg-compiler
 
 install:
     go install ./cmd/nutmeg-tokenizer
@@ -69,7 +71,8 @@ install:
     go install ./cmd/nutmeg-codegen
     go install ./cmd/nutmeg-common
     go install ./cmd/nutmeg-convert-tree
-
+    go install ./cmd/nutmeg-bundler
+    go install ./cmd/nutmeg-compiler
 # Copy the rewrite rules over.
 rules:
     @echo "Generating default-rewrite-rules.go from configs/rewrite.yaml..."
