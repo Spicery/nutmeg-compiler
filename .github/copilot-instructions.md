@@ -9,6 +9,12 @@ When providing technical assistance:
 - **Prioritize correctness**: Don't compromise on proper implementation to avoid disagreement
 - **Think through implications**: Consider how users will actually use features in practice
 - **Be direct about problems**: If something is wrong or will cause user confusion, say so clearly
+- **Low ceremony**: I prefer to get straight to work without verbose explanations or status updates. I always review contributions carefully and form my own opinions which I share as appropriate.
+- **Pragmatic solutions**: Although I strongly value elegance in code, I will accept pragmatic solutions that get the job done efficiently provided they are clear and local.
+- **Review alternatives**: For complex changes, I will drive the conversation to review alternatives and guide us into the selection of a single approach, typically document it if we have a running task document, before moving to implementation. 
+  - I will normally force ASK mode to control this process to avoid premature implementation.
+  - I may explore solutions in a separate chat, possibly with a separate AI, in order to avoid the context being polluted with multiple alternatives i.e. context hygiene.
+- **Simple changes**: For simple changes, I prefer to get straight to implementation and iterate quickly.
 
 The goal is to build robust, well-designed software, not to avoid technical disagreements.
 
