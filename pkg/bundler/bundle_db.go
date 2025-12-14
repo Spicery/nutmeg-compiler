@@ -77,8 +77,10 @@ func CheckMigration(db *gorm.DB) (bool, error) {
 	// Try to get the last migration ID that was applied.
 	// If the migrations table doesn't exist, gormigrate will return an error.
 	// This indicates that no migrations have been run yet.
+	// Use a silent logger to avoid spurious warnings on fresh databases.
 	var lastMigration string
-	err := db.Table(gormigrate.DefaultOptions.TableName).
+	err := db.Session(&gorm.Session{Logger: db.Logger.LogMode(logger.Silent)}).
+		Table(gormigrate.DefaultOptions.TableName).
 		Select("id").
 		Order("id DESC").
 		Limit(1).
