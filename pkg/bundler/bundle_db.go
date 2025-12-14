@@ -3,6 +3,7 @@ package bundler
 import (
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // EntryPoint represents a top-level entry point in the bundle.
