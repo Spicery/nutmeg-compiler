@@ -216,3 +216,39 @@ of node in JSON format, the converter prints each node in the specified target f
 
 This repository creates a single Go application that chains together the tokenizer,
 parser and rewriter to form a complete parser for the common syntax.
+
+## Nutmeg Resolver - a standalone name resolver for the Nutmeg project
+
+We are collaborating on the development of a standalone name resolver for the Nutmeg
+programming language, implemented in the Go programming language. Given a stream
+of nodes in JSON format, the resolver identifies the lexical scope of each identifier and
+annotates the nodes accordingly.
+
+At the time of writing there is no package system. However we have a plan for
+one [here](../docs/nutmeg_package_system.md). When this is implemented the resolver
+will also handle cross-package name resolution.
+
+## Nutmeg Codegen - a standalone code generator for the Nutmeg project
+
+We are collaborating on the development of a standalone code generator for the Nutmeg
+programming language, implemented in the Go programming language. Given a stream
+of nodes in JSON format, the code generator transforms each top-level function into
+a sequence of low-level instructions. We use the same flexible, unstructured node
+format as input to this pipeline but transforms into a final structure format
+in preparation for bundling.
+
+## Nutmeg Bundler - a standalone bundler for the Nutmeg project
+
+Bundling is the process of taking multiple Nutmeg source files, compiling them
+into low-level code and then upserting them into a single database file that can
+be efficiently loaded at runtime. This sqlite3 database file plays the role of
+an executable in Nutmeg. However, unlike a normal executable, it includes 
+assets such as images, data files and so forth.
+
+## Nutmeg Compiler - a synthesis of the toolchain
+
+Our goal is to build a new tool `nutmeg-compiler` that is a synthesis of
+the individual tools. It strings together the tokenizer, parser,
+rewriter, resolver, code generator and bundler into a single command line 
+tool.
+
