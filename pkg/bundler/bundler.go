@@ -7,6 +7,7 @@ import (
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Bundler handles the bundling process.
