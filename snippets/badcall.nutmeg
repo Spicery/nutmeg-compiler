@@ -1,0 +1,6 @@
+notfunc := 0
+
+[main]
+def hello() =>>
+    notfunc() ### This won't work!
+enddef
