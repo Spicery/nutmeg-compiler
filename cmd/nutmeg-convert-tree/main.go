@@ -1,9 +1,10 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
+
+	pflag "github.com/spf13/pflag"
 
 	"github.com/spicery/nutmeg-compiler/pkg/common"
 )
@@ -15,24 +16,23 @@ const DEFAULT_FORMAT = "XML"
 
 func main() {
 	// Define command line flags.
-	var format = flag.String("f", DEFAULT_FORMAT, "Output format (JSON, XML, YAML, MERMAID, ASCIITREE, DOT)")
-	var formatLong = flag.String("format", DEFAULT_FORMAT, "Output format (JSON, XML, YAML, MERMAID, ASCIITREE, DOT)")
-	var indent = flag.Int("indent", 2, "Indentation level for display purposes")
-	var trim = flag.Int("trim", 0, "Trim names for display purposes")
-	var noSpans = flag.Bool("no-spans", false, "Suppress span information in output")
-	var version = flag.Bool("version", false, "Print version and exit")
-	var help = flag.Bool("help", false, "Print help message and exit")
+	var format = pflag.StringP("format", "f", DEFAULT_FORMAT, "Output format (JSON, XML, YAML, MERMAID, ASCIITREE, DOT)")
+	var indent = pflag.Int("indent", 2, "Indentation level for display purposes")
+	var trim = pflag.Int("trim", 0, "Trim names for display purposes")
+	var noSpans = pflag.Bool("no-spans", false, "Suppress span information in output")
+	var version = pflag.Bool("version", false, "Print version and exit")
+	var help = pflag.BoolP("help", "h", false, "Print help message and exit")
 
 	// Custom usage message.
-	flag.Usage = func() {
+	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "\nConverts a parse tree from JSON format to various output formats.\n")
 		fmt.Fprintf(os.Stderr, "Reads JSON from stdin and writes the converted tree to stdout.\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
-		flag.PrintDefaults()
+		pflag.PrintDefaults()
 	}
 
-	flag.Parse()
+	pflag.Parse()
 
 	// Handle version flag.
 	if *version {
@@ -42,14 +42,8 @@ func main() {
 
 	// Handle help flag.
 	if *help {
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(0)
-	}
-
-	// Use the long form if provided, otherwise use the short form.
-	selectedFormat := *format
-	if *formatLong != DEFAULT_FORMAT {
-		selectedFormat = *formatLong
 	}
 
 	// Read JSON from stdin.
@@ -60,7 +54,7 @@ func main() {
 	}
 
 	// Select the appropriate print function based on format.
-	printFunc := common.PickPrintFunc(selectedFormat)
+	printFunc := common.PickPrintFunc(*format)
 
 	// Create indent string based on indent level.
 	indentStr := ""
@@ -70,7 +64,7 @@ func main() {
 
 	// Print the tree in the selected format.
 	printFunc(tree, indentStr, os.Stdout, &common.PrintOptions{
-		Format:            selectedFormat,
+		Format:            *format,
 		Indent:            *indent,
 		TrimTokenOnOutput: *trim,
 		IncludeSpans:      !*noSpans,
