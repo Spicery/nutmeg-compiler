@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"os"
+
+	pflag "github.com/spf13/pflag"
 
 	"github.com/spicery/nutmeg-compiler/pkg/tokenizer"
 	"gopkg.in/yaml.v3"
@@ -45,23 +46,22 @@ func main() {
 	var showHelp, showVersion, exit0, makeRules bool
 	var inputFile, outputFile, rulesFile string
 
-	flag.BoolVar(&showHelp, "h", false, "Show help")
-	flag.BoolVar(&showHelp, "help", false, "Show help")
-	flag.BoolVar(&showVersion, "version", false, "Show version")
-	flag.BoolVar(&exit0, "exit0", false, "Exit with code 0 even on errors")
-	flag.BoolVar(&makeRules, "make-token-rules", false, "Generate default rules YAML")
-	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
-	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
-	flag.StringVar(&rulesFile, "token-rules", "", "YAML rules file (optional)")
+	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
+	pflag.BoolVar(&showVersion, "version", false, "Show version")
+	pflag.BoolVar(&exit0, "exit0", false, "Exit with code 0 even on errors")
+	pflag.BoolVar(&makeRules, "make-token-rules", false, "Generate default rules YAML")
+	pflag.StringVarP(&inputFile, "input", "i", "", "Input file (defaults to stdin)")
+	pflag.StringVarP(&outputFile, "output", "o", "", "Output file (defaults to stdout)")
+	pflag.StringVar(&rulesFile, "token-rules", "", "YAML rules file (optional)")
 
-	flag.Usage = func() {
+	pflag.Usage = func() {
 		fmt.Fprint(os.Stderr, usage)
 	}
 
-	flag.Parse()
+	pflag.Parse()
 
 	if showHelp {
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(0)
 	}
 
@@ -80,9 +80,9 @@ func main() {
 	}
 
 	// Reject any positional arguments
-	if len(flag.Args()) > 0 {
+	if len(pflag.Args()) > 0 {
 		fmt.Fprintf(os.Stderr, "Error: Unexpected positional arguments. Use --input and --output flags instead.\n\n")
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(1)
 	}
 

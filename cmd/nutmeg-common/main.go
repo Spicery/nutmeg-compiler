@@ -1,10 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
+
+	pflag "github.com/spf13/pflag"
 
 	"github.com/spicery/nutmeg-compiler/pkg/checker"
 	"github.com/spicery/nutmeg-compiler/pkg/common"
@@ -34,30 +35,28 @@ func main() {
 	var inputFile, outputFile, tokenRulesFile, rewriteRulesFile, format, srcPath string
 	var trim int
 
-	flag.Usage = func() {
+	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s\n", usage)
-		flag.PrintDefaults()
+		pflag.PrintDefaults()
 	}
 
-	flag.BoolVar(&showHelp, "h", false, "Show help")
-	flag.BoolVar(&showHelp, "help", false, "Show help")
-	flag.BoolVar(&showVersion, "version", false, "Show version")
-	flag.BoolVar(&debug, "debug", false, "Enable debug output to stderr")
-	flag.BoolVar(&skipOptional, "skip-optional", false, "Skip optional rewrite passes")
-	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
-	flag.StringVar(&outputFile, "output", "", "Output file (defaults to stdout)")
-	flag.StringVar(&srcPath, "src-path", "", "Source path to annotate the unit node")
-	flag.StringVar(&tokenRulesFile, "token-rules", "", "YAML file containing tokenizer rules (optional)")
-	flag.StringVar(&rewriteRulesFile, "rewrite-rules", "", "YAML file containing rewrite rules (optional)")
-	flag.StringVar(&format, "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
-	flag.StringVar(&format, "format", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
-	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
-	flag.BoolVar(&noSpans, "no-spans", false, "Suppress span information in output")
+	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
+	pflag.BoolVar(&showVersion, "version", false, "Show version")
+	pflag.BoolVar(&debug, "debug", false, "Enable debug output to stderr")
+	pflag.BoolVar(&skipOptional, "skip-optional", false, "Skip optional rewrite passes")
+	pflag.StringVarP(&inputFile, "input", "i", "", "Input file (defaults to stdin)")
+	pflag.StringVarP(&outputFile, "output", "o", "", "Output file (defaults to stdout)")
+	pflag.StringVar(&srcPath, "src-path", "", "Source path to annotate the unit node")
+	pflag.StringVar(&tokenRulesFile, "token-rules", "", "YAML file containing tokenizer rules (optional)")
+	pflag.StringVar(&rewriteRulesFile, "rewrite-rules", "", "YAML file containing rewrite rules (optional)")
+	pflag.StringVarP(&format, "format", "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
+	pflag.IntVar(&trim, "trim", 0, "Trim names for display purposes")
+	pflag.BoolVar(&noSpans, "no-spans", false, "Suppress span information in output")
 
-	flag.Parse()
+	pflag.Parse()
 
 	if showHelp {
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(0)
 	}
 
@@ -67,9 +66,9 @@ func main() {
 	}
 
 	// Reject any positional arguments.
-	if len(flag.Args()) > 0 {
+	if len(pflag.Args()) > 0 {
 		fmt.Fprintf(os.Stderr, "Error: Unexpected positional arguments. Use --input and --output flags instead.\n\n")
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(1)
 	}
 

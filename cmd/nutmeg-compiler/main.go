@@ -1,10 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
+
+	pflag "github.com/spf13/pflag"
 
 	"github.com/spicery/nutmeg-compiler/pkg/bundler"
 	"github.com/spicery/nutmeg-compiler/pkg/checker"
@@ -37,27 +38,25 @@ func main() {
 	var showHelp, showVersion, debug, skipOptional bool
 	var inputFile, bundleFile, tokenRulesFile, rewriteRulesFile, format string
 
-	flag.Usage = func() {
+	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s\n", usage)
-		flag.PrintDefaults()
+		pflag.PrintDefaults()
 	}
 
-	flag.BoolVar(&showHelp, "h", false, "Show help")
-	flag.BoolVar(&showHelp, "help", false, "Show help")
-	flag.BoolVar(&showVersion, "version", false, "Show version")
-	flag.BoolVar(&debug, "debug", false, "Enable debug output to stderr")
-	flag.BoolVar(&skipOptional, "skip-optional", false, "Skip optional rewrite passes")
-	flag.StringVar(&inputFile, "input", "", "Input file (does NOT default to stdin, used for srcPath)")
-	flag.StringVar(&bundleFile, "bundle", "", "Bundle file path (required)")
-	flag.StringVar(&tokenRulesFile, "token-rules", "", "YAML file containing tokenizer rules (optional)")
-	flag.StringVar(&rewriteRulesFile, "rewrite-rules", "", "YAML file containing rewrite rules (optional)")
-	flag.StringVar(&format, "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
-	flag.StringVar(&format, "format", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
+	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
+	pflag.BoolVar(&showVersion, "version", false, "Show version")
+	pflag.BoolVar(&debug, "debug", false, "Enable debug output to stderr")
+	pflag.BoolVar(&skipOptional, "skip-optional", false, "Skip optional rewrite passes")
+	pflag.StringVarP(&inputFile, "input", "i", "", "Input file (does NOT default to stdin, used for srcPath)")
+	pflag.StringVar(&bundleFile, "bundle", "", "Bundle file path (required)")
+	pflag.StringVar(&tokenRulesFile, "token-rules", "", "YAML file containing tokenizer rules (optional)")
+	pflag.StringVar(&rewriteRulesFile, "rewrite-rules", "", "YAML file containing rewrite rules (optional)")
+	pflag.StringVarP(&format, "format", "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")
 
-	flag.Parse()
+	pflag.Parse()
 
 	if showHelp {
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(0)
 	}
 
@@ -69,21 +68,21 @@ func main() {
 	// Bundle file is mandatory.
 	if bundleFile == "" {
 		fmt.Fprintf(os.Stderr, "Error: --bundle flag is required\n")
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(1)
 	}
 
 	// Input file is mandatory.
 	if inputFile == "" {
 		fmt.Fprintf(os.Stderr, "Error: --input flag is required\n")
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(1)
 	}
 
 	// Reject any positional arguments.
-	if len(flag.Args()) > 0 {
+	if len(pflag.Args()) > 0 {
 		fmt.Fprintf(os.Stderr, "Error: Unexpected positional arguments. Use --input flag instead.\n\n")
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(1)
 	}
 

@@ -19,26 +19,21 @@ This tool is effectively the same as a pipeline of:
 
 Command line options should include (in no particular order)
 
-  -bundle string
+  --bundle string
     	Bundle file path (required)
-  -bundle string
-    	Bundle file path (required)
-  -debug
+  --debug
     	Enable debug output to stderr
-  -f string
+  -f, --format string
     	Output format (JSON, XML, etc.) (default "JSON")
-  -format string
-    	Output format (JSON, XML, etc.) (default "JSON")
-  -h	Show help
-  -help
+  -h, --help
     	Show help
-  -input string
+  -i, --input string
     	Input file (does NOT default to stdin, used for srcPath)
-  -rewrite-rules string
+  --rewrite-rules string
     	YAML file containing rewrite rules (optional)
-  -skip-optional
+  --skip-optional
     	Skip optional rewrite passes
-  -token-rules string
+  --token-rules string
     	YAML file containing tokenizer rules (optional)
-  -version
+  --version
     	Show version

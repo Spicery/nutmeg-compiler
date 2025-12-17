@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"os"
+
+	pflag "github.com/spf13/pflag"
 
 	"github.com/spicery/nutmeg-compiler/pkg/bundler"
 	"github.com/spicery/nutmeg-compiler/pkg/common"
@@ -22,24 +23,23 @@ func main() {
 	var trim int
 
 	// Set up custom usage function.
-	flag.Usage = func() {
+	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s\n\nUsage:\n", usage)
-		flag.PrintDefaults()
+		pflag.PrintDefaults()
 	}
 
-	flag.BoolVar(&showHelp, "h", false, "Show help")
-	flag.BoolVar(&showHelp, "help", false, "Show help")
-	flag.BoolVar(&showVersion, "version", false, "Show version")
-	flag.BoolVar(&migrate, "migrate", false, "Perform database migration")
-	flag.StringVar(&bundleFile, "bundle", "", "Bundle file path (required)")
-	flag.StringVar(&inputFile, "input", "", "Input file (defaults to stdin)")
-	flag.StringVar(&srcPath, "src-path", "", "Source path to annotate the unit with origin")
-	flag.IntVar(&trim, "trim", 0, "Trim names for display purposes (not used)")
+	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
+	pflag.BoolVar(&showVersion, "version", false, "Show version")
+	pflag.BoolVar(&migrate, "migrate", false, "Perform database migration")
+	pflag.StringVar(&bundleFile, "bundle", "", "Bundle file path (required)")
+	pflag.StringVarP(&inputFile, "input", "i", "", "Input file (defaults to stdin)")
+	pflag.StringVar(&srcPath, "src-path", "", "Source path to annotate the unit with origin")
+	pflag.IntVar(&trim, "trim", 0, "Trim names for display purposes (not used)")
 
-	flag.Parse()
+	pflag.Parse()
 
 	if showHelp {
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(0)
 	}
 
@@ -51,7 +51,7 @@ func main() {
 	// Bundle file is mandatory.
 	if bundleFile == "" {
 		fmt.Fprintf(os.Stderr, "Error: --bundle flag is required\n")
-		flag.Usage()
+		pflag.Usage()
 		os.Exit(1)
 	}
 

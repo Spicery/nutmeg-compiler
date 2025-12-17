@@ -14,11 +14,11 @@ and to annotate them with the following information:
 This command will share the same basic options as the other nutmeg-XXX 
 commands and how no configuration file.
 
-    --help
+    -h, --help
     --version
-    --input FILE
-    --output FILE
-    --format, -f FORMAT
+    -i, --input FILE
+    -o, --output FILE
+    -f, --format FORMAT
     --no-spans
     --trim INT
 

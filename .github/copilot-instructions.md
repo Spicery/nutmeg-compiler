@@ -27,6 +27,9 @@ The goal is to build robust, well-designed software, not to avoid technical disa
 - I prefer text files to use new-line as a terminator rather than a separator
   i.e. newlines at the end of non-empty files.
 - And lines should not have trailing whitespace.
+- All command-line tools use pflag (github.com/spf13/pflag) for POSIX-compliant
+  flag parsing, supporting both short forms (e.g., `-i`, `-f`) and long forms
+  (e.g., `--input`, `--format`), and enabling flag bundling (e.g., `-if`).
 
 ## Test Guidelines
 

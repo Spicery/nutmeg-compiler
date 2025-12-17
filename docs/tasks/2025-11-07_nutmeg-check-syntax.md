@@ -15,11 +15,11 @@ tool will:
 This command will share the same basic options as the other nutmeg-XXX 
 commands such as nutmeg-parser, nutmeg-rewriter and nutmeg-resolver.
 
-    --help
+    -h, --help
     --version
-    --input FILE
-    --output FILE
-    --format, -f FORMAT
+    -i, --input FILE
+    -o, --output FILE
+    -f, --format FORMAT
     --no-spans
     --trim INT
 
