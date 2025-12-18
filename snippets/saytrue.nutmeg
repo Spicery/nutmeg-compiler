@@ -1,0 +1,4 @@
+[main]
+def saytrue() =>>
+    println(true)
+enddef

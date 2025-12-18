@@ -34,6 +34,10 @@ func NewPushInt(value int) Instruction {
 	return Instruction{Type: "push.int", IntValue: &value}
 }
 
+func NewPushBool(value string) Instruction {
+	return Instruction{Type: "push.bool", StrValue: &value}
+}
+
 // NewPushString creates a push.string instruction.
 func NewPushString(value string) Instruction {
 	return Instruction{Type: "push.string", StrValue: &value}
