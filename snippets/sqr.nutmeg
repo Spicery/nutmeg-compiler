@@ -1,0 +1,8 @@
+def sqr(x) =>>
+    x * x
+enddef
+
+[main]
+def main() =>>
+    println( sqr(5) )
+enddef

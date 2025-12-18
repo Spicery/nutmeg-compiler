@@ -149,6 +149,7 @@ func (cg *CodeGenerator) transform(node *common.Node) error {
 	// Check if this is a fn node that needs transformation.
 	if node.Name == common.NameFn {
 		fcg := cg.NewFnCodeGenState()
+		fcg.addArguments(node)
 		return fcg.rewriteFnNode(node)
 	}
 
@@ -163,6 +164,15 @@ func (cg *CodeGenerator) transform(node *common.Node) error {
 	return nil
 }
 
+func (fcg *FnCodeGenState) addArguments(fnNode *common.Node) {
+	argumentsNode := fnNode.Children[0]
+	pdnargs := len(argumentsNode.Children)
+	for n, child := range argumentsNode.Children {
+		fcg.localOffsets[child.Options[common.OptionSerialNo]] = pdnargs - n - 1
+	}
+	fcg.maxOffsetSoFar = pdnargs
+}
+
 // rewriteFnNode transforms a fn node by processing its arguments and body,
 // generating instructions, and updating the node to reflect the generated code.
 func (fcg *FnCodeGenState) rewriteFnNode(node *common.Node) error {
@@ -170,7 +180,12 @@ func (fcg *FnCodeGenState) rewriteFnNode(node *common.Node) error {
 	pdnargs := len(argumentsNode.Children)
 	node.Options[common.OptionNParams] = fmt.Sprintf("%d", pdnargs)
 	bodyNode := node.Children[1]
-	fcg.plantPopArguments(argumentsNode)
+
+	// TODO: At the moment the arguments are handled by the function call mechanism.
+	// In the future, we may want to generate code to initialize local variables
+	// from the arguments here.
+	//fcg.plantPopArguments(argumentsNode)
+
 	err := fcg.plantInstructions(bodyNode)
 	if err != nil {
 		return err
@@ -343,7 +358,13 @@ func (fcg *FnCodeGenState) plantCallGlobal(id_name string, stackLengthTmpVar *Te
 }
 
 func (fcg *FnCodeGenState) plantPushInt(value string) {
-	pushNumber := &common.Node{Name: common.NamePushInt, Options: map[string]string{common.OptionDecimal: value}, Children: []*common.Node{}}
+	pushNumber := &common.Node{
+		Name: common.NamePushInt,
+		Options: map[string]string{
+			common.OptionDecimal: value,
+		},
+		Children: []*common.Node{},
+	}
 	fcg.instructions.Add(pushNumber)
 }
 
