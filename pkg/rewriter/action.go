@@ -417,3 +417,18 @@ func (a *RemoveChildAction) Apply(pattern *Pattern, childPosition int, node *com
 	node.Children = append(node.Children[:childPosition], node.Children[childPosition+1:]...)
 	return node, true
 }
+
+type RemoveChildrenAction struct {
+}
+
+func (a *RemoveChildrenAction) Apply(pattern *Pattern, childPosition int, node *common.Node, path *common.Path) (*common.Node, bool) {
+	if node == nil {
+		return node, false
+	}
+	if len(node.Children) == 0 {
+		return node, false
+	}
+	// Remove all children
+	node.Children = node.Children[:0] // ✓ Reuses capacity, no allocation
+	return node, true
+}

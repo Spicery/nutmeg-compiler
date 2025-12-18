@@ -240,6 +240,16 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 			return fmt.Errorf("string node missing string value option")
 		}
 		fcg.plantPushString(str_value)
+	case common.NameBoolean:
+		bool_value, ok := node.Options[common.OptionValue]
+		if !ok {
+			return fmt.Errorf("boolean node missing value option")
+		}
+		if bool_value == common.ValueTrue || bool_value == common.ValueFalse {
+			fcg.plantPushBool(bool_value)
+		} else {
+			return fmt.Errorf("invalid boolean value: %s", bool_value)
+		}
 	case common.NameApply:
 		if len(node.Children) == 2 {
 			fn := node.Children[0]
@@ -355,6 +365,17 @@ func (fcg *FnCodeGenState) plantCallGlobal(id_name string, stackLengthTmpVar *Te
 		},
 		Children: []*common.Node{},
 	})
+}
+
+func (fcg *FnCodeGenState) plantPushBool(value string) {
+	pushBool := &common.Node{
+		Name: common.NamePushBool,
+		Options: map[string]string{
+			common.OptionValue: value,
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(pushBool)
 }
 
 func (fcg *FnCodeGenState) plantPushInt(value string) {
