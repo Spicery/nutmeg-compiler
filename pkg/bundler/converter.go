@@ -73,6 +73,13 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 		}
 		return []Instruction{NewPushInt(value)}, nil
 
+	case common.NamePushBool:
+		valueStr, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("boolean missing value: %w", err)
+		}
+		return []Instruction{NewPushBool(valueStr)}, nil
+
 	case common.NamePushString:
 		value, err := getStringOption(node, common.OptionValue)
 		if err != nil {
@@ -144,14 +151,15 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 		}
 		return []Instruction{NewCallGlobalCounted(name, offset)}, nil
 
-	default:
+	case common.NameSeq, common.NameArguments:
 		// For container nodes (like <seq>, <arguments>, etc.), recursively collect instructions from children.
 		if len(node.Children) > 0 {
 			return convertNodesToInstructions(node.Children)
 		}
-
-		// Empty nodes or unrecognized leaf nodes are skipped (e.g., <arguments> with no children).
 		return []Instruction{}, nil
+
+	default:
+		return nil, fmt.Errorf("unrecognized instruction node: %s", node.Name)
 	}
 }
 
