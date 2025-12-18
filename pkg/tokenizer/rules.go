@@ -10,6 +10,7 @@ import (
 
 const LOOSE = 9999
 const TIGHT = 100
+const ATOMIC = 0
 
 // RulesFile represents the structure of a YAML rules file
 type RulesFile struct {
@@ -360,6 +361,8 @@ func getDefaultPrefixTokens() map[string]PrefixTokenData {
 		"const":  {Precedence: TIGHT, Arity: common.One},
 		"var":    {Precedence: TIGHT, Arity: common.One},
 		"val":    {Precedence: TIGHT, Arity: common.One},
+		"true":   {Precedence: ATOMIC, Arity: common.Zero},
+		"false":  {Precedence: ATOMIC, Arity: common.Zero},
 	}
 }
 

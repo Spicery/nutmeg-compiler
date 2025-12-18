@@ -184,6 +184,27 @@ passes:
           replaceName:
             src: self
             from: value
+      
+      - name: booleans
+        match:
+          self:
+            name: form
+            count: 1
+          child:
+            name: part
+            key: keyword
+            value.regexp: true|false
+        action:
+          sequence:
+            - replaceName:
+                with: boolean
+            - replaceValue:
+                key: value
+                src: child
+                from: value
+            - removeChildren: true
+
+          
 
   - name: Pass 2, Conditional, handle ifnot/elseifnot
     singlePass: true

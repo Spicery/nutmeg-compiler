@@ -48,6 +48,7 @@ type ActionConfig struct {
 	Sequence           []ActionConfig      `yaml:"sequence,omitempty"`
 	ChildAction        *ActionConfig       `yaml:"childAction,omitempty"`
 	RemoveChild        bool                `yaml:"removeChild,omitempty"`
+	RemoveChildren     bool                `yaml:"removeChildren,omitempty"`
 	MergeChildWithNext *bool               `yaml:"mergeChildWithNext,omitempty"`
 	NewNodeChild       *NewNodeChildConfig `yaml:"newNodeChild,omitempty"`
 	PermuteChildren    []int               `yaml:"permuteChildren,omitempty"`
@@ -144,6 +145,9 @@ func (ac ActionConfig) Validate() error {
 	if ac.RemoveChild {
 		count++
 	}
+	if ac.RemoveChildren {
+		count++
+	}
 	if len(ac.PermuteChildren) > 0 {
 		// fmt.Println("PermuteChildren count:", len(ac.PermuteChildren))
 		count++
@@ -226,6 +230,9 @@ func (ac ActionConfig) ToAction() (Action, error) {
 	}
 	if ac.RemoveChild {
 		return &RemoveChildAction{}, nil
+	}
+	if ac.RemoveChildren {
+		return &RemoveChildrenAction{}, nil
 	}
 	if ac.RotateOption != nil {
 		if ac.RotateOption.Key != "" && len(ac.RotateOption.Values) >= 2 {

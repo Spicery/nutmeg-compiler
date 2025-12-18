@@ -188,8 +188,19 @@ func (c *Checker) validateForm(node *common.Node) {
 		c.validateFormFor(node)
 	case common.ValueLet:
 		c.validateFormLet(node)
+	case common.ValueTrue, common.ValueFalse:
+		c.validateFormBoolean(node)
 	default:
 		c.addIssue(fmt.Sprintf("unexpected form keyword: %s", keyword), first)
+	}
+}
+
+func (c *Checker) validateFormBoolean(bool_node *common.Node) {
+	if !c.factArity(1, bool_node) {
+		return
+	}
+	if !c.expectArity(0, bool_node.Children[0]) {
+		return
 	}
 }
 
