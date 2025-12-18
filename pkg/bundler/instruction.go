@@ -11,8 +11,10 @@ type Instruction struct {
 	// PushInt, PopLocal, PushLocal.
 	Index *int `json:"index,omitempty"`
 
+	IntValue *int `json:"ivalue,omitempty"`
+
 	// PushString, PushGlobal.
-	Value *string `json:"value,omitempty"`
+	StrValue *string `json:"value,omitempty"`
 
 	// SyscallCounted, CallGlobalCounted.
 	Name *string `json:"name,omitempty"`
@@ -29,12 +31,12 @@ type FunctionObject struct {
 
 // NewPushInt creates a push.int instruction.
 func NewPushInt(value int) Instruction {
-	return Instruction{Type: "push.int", Index: &value}
+	return Instruction{Type: "push.int", IntValue: &value}
 }
 
 // NewPushString creates a push.string instruction.
 func NewPushString(value string) Instruction {
-	return Instruction{Type: "push.string", Value: &value}
+	return Instruction{Type: "push.string", StrValue: &value}
 }
 
 // NewStackLength creates a stack.length instruction.
