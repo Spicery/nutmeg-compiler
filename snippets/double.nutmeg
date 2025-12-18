@@ -1,0 +1,8 @@
+def double(x) =>>
+    x + x
+enddef
+
+[main]
+def main() =>>
+    println( double(5) )
+enddef
