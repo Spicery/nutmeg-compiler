@@ -81,3 +81,53 @@ func NewSyscallCounted(name string, nargs int) Instruction {
 func NewCallGlobalCounted(name string, nargs int) Instruction {
 	return Instruction{Type: "call.global.counted", Name: &name, Index: &nargs}
 }
+
+// NewErase creates an erase instruction.
+func NewErase() Instruction {
+	return Instruction{Type: "erase"}
+}
+
+// NewCheckBool creates a check.bool instruction.
+func NewCheckBool(offset int) Instruction {
+	return Instruction{Type: "check.bool", Index: &offset}
+}
+
+// NewLabel creates a label instruction.
+func NewLabel(label string) Instruction {
+	return Instruction{Type: "label", StrValue: &label}
+}
+
+// NewGoto creates a goto instruction.
+func NewGoto(label string) Instruction {
+	return Instruction{Type: "goto", StrValue: &label}
+}
+
+// NewIfNot creates an if.not instruction.
+func NewIfNot(label string) Instruction {
+	return Instruction{Type: "if.not", StrValue: &label}
+}
+
+// NewIfSo creates an if.so instruction.
+func NewIfSo(label string) Instruction {
+	return Instruction{Type: "if.so", StrValue: &label}
+}
+
+// NewIfNotReturn creates an if.not.return instruction.
+func NewIfNotReturn() Instruction {
+	return Instruction{Type: "if.not.return"}
+}
+
+// NewIfSoReturn creates an if.so.return instruction.
+func NewIfSoReturn() Instruction {
+	return Instruction{Type: "if.so.return"}
+}
+
+// NewIfThenElse creates an if.then.else instruction.
+func NewIfThenElse(thenLabel string, elseLabel string) Instruction {
+	return Instruction{Type: "if.then.else", Name: &thenLabel, StrValue: &elseLabel}
+}
+
+// NewInProgress creates an in.progress instruction.
+func NewInProgress(name string) Instruction {
+	return Instruction{Type: "in.progress", Name: &name}
+}
