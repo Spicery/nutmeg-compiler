@@ -301,6 +301,42 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 			return err
 		}
 		fcg.plantDone(name, tmpvar)
+	case common.NameIf:
+		if len(node.Children) != 3 {
+			return fmt.Errorf("if node must have exactly 3 children (predicate, then, else)")
+		}
+		// Allocate labels for else and end
+		elseLabel := fcg.AllocateLabel()
+		endLabel := fcg.AllocateLabel()
+
+		// Compile the predicate as a query
+		// Success: continue to then branch
+		// Failure: jump to else branch
+		err := fcg.plantQueryInstructions(node.Children[0], NewContinueLabel(), elseLabel)
+		if err != nil {
+			return err
+		}
+
+		// Compile the then branch
+		err = fcg.plantInstructions(node.Children[1])
+		if err != nil {
+			return err
+		}
+
+		// Jump to end after then branch
+		fcg.plantGoto(endLabel)
+
+		// Plant else label
+		fcg.plantLabel(elseLabel)
+
+		// Compile the else branch
+		err = fcg.plantInstructions(node.Children[2])
+		if err != nil {
+			return err
+		}
+
+		// Plant end label
+		fcg.plantLabel(endLabel)
 	default:
 		return fmt.Errorf("unimplemented node type: %s", node.Name)
 	}
@@ -587,4 +623,28 @@ func (fcg *FnCodeGenState) plantErase() {
 		Children: []*common.Node{},
 	}
 	fcg.instructions.Add(eraseNode)
+}
+
+// plantLabel plants a label instruction at the current position.
+func (fcg *FnCodeGenState) plantLabel(label Label) {
+	labelNode := &common.Node{
+		Name: common.NameLabel,
+		Options: map[string]string{
+			common.OptionValue: label.labelText,
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(labelNode)
+}
+
+// plantGoto plants an unconditional goto instruction.
+func (fcg *FnCodeGenState) plantGoto(label Label) {
+	gotoNode := &common.Node{
+		Name: common.NameGoto,
+		Options: map[string]string{
+			common.OptionValue: label.labelText,
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(gotoNode)
 }

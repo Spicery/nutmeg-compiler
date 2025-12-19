@@ -151,6 +151,68 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 		}
 		return []Instruction{NewCallGlobalCounted(name, offset)}, nil
 
+	case common.NameErase:
+		return []Instruction{NewErase()}, nil
+
+	case common.NameCheckBool:
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("check.bool missing offset: %w", err)
+		}
+		return []Instruction{NewCheckBool(offset)}, nil
+
+	case common.NameLabel:
+		label, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("label missing value: %w", err)
+		}
+		return []Instruction{NewLabel(label)}, nil
+
+	case common.NameGoto:
+		label, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("goto missing value: %w", err)
+		}
+		return []Instruction{NewGoto(label)}, nil
+
+	case common.NameIfNot:
+		label, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("if.not missing value: %w", err)
+		}
+		return []Instruction{NewIfNot(label)}, nil
+
+	case common.NameIfSo:
+		label, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("if.so missing value: %w", err)
+		}
+		return []Instruction{NewIfSo(label)}, nil
+
+	case common.NameIfNotReturn:
+		return []Instruction{NewIfNotReturn()}, nil
+
+	case common.NameIfSoReturn:
+		return []Instruction{NewIfSoReturn()}, nil
+
+	case common.NameIfThenElse:
+		thenLabel, err := getStringOption(node, common.OptionName)
+		if err != nil {
+			return nil, fmt.Errorf("if.then.else missing then label (name): %w", err)
+		}
+		elseLabel, err := getStringOption(node, common.OptionValue)
+		if err != nil {
+			return nil, fmt.Errorf("if.then.else missing else label (value): %w", err)
+		}
+		return []Instruction{NewIfThenElse(thenLabel, elseLabel)}, nil
+
+	case common.NameInProgress:
+		name, err := getStringOption(node, common.OptionName)
+		if err != nil {
+			return nil, fmt.Errorf("in.progress missing name: %w", err)
+		}
+		return []Instruction{NewInProgress(name)}, nil
+
 	case common.NameSeq, common.NameArguments:
 		// For container nodes (like <seq>, <arguments>, etc.), recursively collect instructions from children.
 		if len(node.Children) > 0 {
