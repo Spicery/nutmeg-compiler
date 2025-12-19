@@ -1,0 +1,4 @@
+[main]
+def lt() =>>
+    println(3 < 7)
+enddef
