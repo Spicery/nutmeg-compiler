@@ -21,6 +21,7 @@ type FnCodeGenState struct {
 	localOffsets   map[string]int
 	maxOffsetSoFar int
 	freeTmpVars    []*TemporaryVariable
+	labelCounter   int
 }
 
 type TemporaryVariable struct {
@@ -53,7 +54,14 @@ func (cg *CodeGenerator) NewFnCodeGenState() *FnCodeGenState {
 		instructions:   common.List[*common.Node]{},
 		localOffsets:   make(map[string]int),
 		maxOffsetSoFar: 0,
+		labelCounter:   0,
 	}
+}
+
+func (fcg *FnCodeGenState) AllocateLabel() Label {
+	text := fmt.Sprintf("L%d", fcg.labelCounter)
+	fcg.labelCounter++
+	return NewSimpleLabel(text)
 }
 
 func (fcg *FnCodeGenState) NewTemporaryVariable() *TemporaryVariable {
@@ -422,4 +430,161 @@ func (fcg *FnCodeGenState) plantStackLength() *TemporaryVariable {
 	stackLengthNode := &common.Node{Name: common.NameStackLength, Options: map[string]string{common.OptionOffset: tmpvar.OffsetString()}, Children: []*common.Node{}}
 	fcg.instructions.Add(stackLengthNode)
 	return tmpvar
+}
+
+// plantQueryInstructions compiles a query expression that can succeed or fail.
+// For now, this assumes the node is an ordinary expression, evaluates it,
+// checks it's a boolean, and branches based on the success/failure labels.
+func (fcg *FnCodeGenState) plantQueryInstructions(node *common.Node, successLabel Label, failureLabel Label) error {
+	// Allocate a temporary variable to track stack position
+	tmpvar := fcg.plantStackLength()
+	defer fcg.FreeTemporaryVariable(tmpvar)
+
+	// Compile the expression
+	err := fcg.plantInstructions(node)
+	if err != nil {
+		return err
+	}
+
+	// Check that the result is a boolean
+	fcg.plantCheckBool(tmpvar)
+
+	// Plant the appropriate conditional jump based on label types
+	fcg.plantConditionalJump(successLabel, failureLabel)
+
+	return nil
+}
+
+// plantCheckBool plants an instruction to check that the top of stack is a boolean.
+func (fcg *FnCodeGenState) plantCheckBool(tmpvar *TemporaryVariable) {
+	checkBoolNode := &common.Node{
+		Name: common.NameCheckBool,
+		Options: map[string]string{
+			common.OptionOffset: tmpvar.OffsetString(),
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(checkBoolNode)
+}
+
+// plantConditionalJump plants the appropriate conditional jump instruction
+// based on the types of the success and failure labels.
+func (fcg *FnCodeGenState) plantConditionalJump(successLabel Label, failureLabel Label) {
+	switch {
+	case successLabel.labelType == ContinueLabel && failureLabel.labelType == ContinueLabel:
+		// Both continue: no jump needed (drop through), but erase the boolean
+		fcg.plantErase()
+		return
+
+	case successLabel.labelType == ContinueLabel && failureLabel.labelType == SimpleLabel:
+		// If false, jump to failure; if true, continue
+		fcg.plantIfNot(failureLabel)
+
+	case successLabel.labelType == ContinueLabel && failureLabel.labelType == ReturnLabel:
+		// If false, return; if true, continue
+		fcg.plantIfNotReturn()
+
+	case successLabel.labelType == SimpleLabel && failureLabel.labelType == ContinueLabel:
+		// If true, jump to success; if false, continue
+		fcg.plantIfSo(successLabel)
+
+	case successLabel.labelType == SimpleLabel && failureLabel.labelType == SimpleLabel:
+		// Jump to success if true, failure if false
+		fcg.plantIfThenElse(successLabel, failureLabel)
+
+	case successLabel.labelType == SimpleLabel && failureLabel.labelType == ReturnLabel:
+		// If true, jump to success; if false, return
+		fcg.plantIfSo(successLabel)
+		fcg.plantReturn()
+
+	case successLabel.labelType == ReturnLabel && failureLabel.labelType == ContinueLabel:
+		// If true, return; if false, continue
+		fcg.plantIfSoReturn()
+
+	case successLabel.labelType == ReturnLabel && failureLabel.labelType == SimpleLabel:
+		// If true, return; if false, jump to failure
+		fcg.plantIfNot(failureLabel)
+		fcg.plantReturn()
+
+	case successLabel.labelType == ReturnLabel && failureLabel.labelType == ReturnLabel:
+		// Both return: unconditional return
+		fcg.plantReturn()
+	}
+}
+
+// plantIfNot plants an if.not instruction that jumps to the label if the condition is false.
+func (fcg *FnCodeGenState) plantIfNot(label Label) {
+	ifNotNode := &common.Node{
+		Name: common.NameIfNot,
+		Options: map[string]string{
+			common.OptionValue: label.labelText,
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(ifNotNode)
+}
+
+// plantIfSo plants an if.so instruction that jumps to the label if the condition is true.
+func (fcg *FnCodeGenState) plantIfSo(label Label) {
+	ifSoNode := &common.Node{
+		Name: common.NameIfSo,
+		Options: map[string]string{
+			common.OptionValue: label.labelText,
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(ifSoNode)
+}
+
+// plantIfSoReturn plants an if.so.return instruction that returns if the condition is true.
+func (fcg *FnCodeGenState) plantIfSoReturn() {
+	ifSoReturnNode := &common.Node{
+		Name:     common.NameIfSoReturn,
+		Options:  map[string]string{},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(ifSoReturnNode)
+}
+
+// plantIfNotReturn plants an if.not.return instruction that returns if the condition is false.
+func (fcg *FnCodeGenState) plantIfNotReturn() {
+	ifNotReturnNode := &common.Node{
+		Name:     common.NameIfNotReturn,
+		Options:  map[string]string{},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(ifNotReturnNode)
+}
+
+// plantIfThenElse plants an if.then.else instruction with two labels.
+func (fcg *FnCodeGenState) plantIfThenElse(thenLabel Label, elseLabel Label) {
+	ifThenElseNode := &common.Node{
+		Name: common.NameIfThenElse,
+		Options: map[string]string{
+			common.OptionName:  thenLabel.labelText,
+			common.OptionValue: elseLabel.labelText,
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(ifThenElseNode)
+}
+
+// plantReturn plants a return instruction.
+func (fcg *FnCodeGenState) plantReturn() {
+	returnNode := &common.Node{
+		Name:     common.NameReturn,
+		Options:  map[string]string{},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(returnNode)
+}
+
+// plantErase plants an erase instruction to discard the top value on the stack.
+func (fcg *FnCodeGenState) plantErase() {
+	eraseNode := &common.Node{
+		Name:     common.NameErase,
+		Options:  map[string]string{},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(eraseNode)
 }
