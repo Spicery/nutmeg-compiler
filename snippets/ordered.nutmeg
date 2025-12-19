@@ -1,0 +1,12 @@
+def ordered(x, y) =>>
+    if x <= y then
+        "ordered"
+    else
+        "unordered"
+    endif
+end
+
+[main]
+def main() =>>
+    println(ordered(88, 99))
+end
