@@ -8,5 +8,5 @@ enddef
 
 [main]
 def main():
-    println(nfib(20))
+    println(nfib(30))
 enddef
