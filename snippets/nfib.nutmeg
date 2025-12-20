@@ -5,3 +5,8 @@ def nfib(n):
         1 + nfib(n-1) + nfib(n-2)
     endif
 enddef
+
+[main]
+def main():
+    println(nfib(20))
+enddef
