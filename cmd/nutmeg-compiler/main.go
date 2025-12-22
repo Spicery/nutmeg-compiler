@@ -48,7 +48,7 @@ func main() {
 	pflag.BoolVar(&debug, "debug", false, "Enable debug output to stderr")
 	pflag.BoolVar(&skipOptional, "skip-optional", false, "Skip optional rewrite passes")
 	pflag.StringVarP(&inputFile, "input", "i", "", "Input file (does NOT default to stdin, used for srcPath)")
-	pflag.StringVar(&bundleFile, "bundle", "", "Bundle file path (required)")
+	pflag.StringVarP(&bundleFile, "bundle", "b", "", "Bundle file path (required)")
 	pflag.StringVar(&tokenRulesFile, "token-rules", "", "YAML file containing tokenizer rules (optional)")
 	pflag.StringVar(&rewriteRulesFile, "rewrite-rules", "", "YAML file containing rewrite rules (optional)")
 	pflag.StringVarP(&format, "format", "f", DEFAULT_FORMAT, "Output format (JSON, XML, etc.)")

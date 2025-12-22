@@ -31,7 +31,7 @@ func main() {
 	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
 	pflag.BoolVar(&showVersion, "version", false, "Show version")
 	pflag.BoolVar(&migrate, "migrate", false, "Perform database migration")
-	pflag.StringVar(&bundleFile, "bundle", "", "Bundle file path (required)")
+	pflag.StringVarP(&bundleFile, "bundle", "b", "", "Bundle file path (required)")
 	pflag.StringVarP(&inputFile, "input", "i", "", "Input file (defaults to stdin)")
 	pflag.StringVar(&srcPath, "src-path", "", "Source path to annotate the unit with origin")
 	pflag.IntVar(&trim, "trim", 0, "Trim names for display purposes (not used)")
