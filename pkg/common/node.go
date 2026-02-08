@@ -69,6 +69,7 @@ const NameIfNotReturn = "if.not.return"
 const NameIfThenElse = "if.then.else"
 const NameCheckBool = "check.bool"
 const NameErase = "erase"
+const NameCheckCountIs1 = "check.count.is1"
 
 const OptionConst = "const"
 const OptionKeyword = "keyword"

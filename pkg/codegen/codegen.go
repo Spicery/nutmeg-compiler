@@ -217,6 +217,24 @@ func (fcg *FnCodeGenState) rewriteFnNode(node *common.Node) error {
 
 func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 	switch node.Name {
+	case common.NameBind:
+		if len(node.Children) != 2 {
+			return fmt.Errorf("bind node must have exactly 2 children")
+		}
+		idNode := node.Children[0]
+		valueNode := node.Children[1]
+		if idNode.Name != common.NameIdentifier {
+			return fmt.Errorf("expected identifier as first child of bind, got %s", idNode.Name)
+		}
+		tmpvar := fcg.plantStackLength()
+		err := fcg.plantInstructions(valueNode)
+		if err != nil {
+			return err
+		}
+		serial_no := idNode.Options[common.OptionSerialNo]
+		fcg.plantPopLocalBySerialNoCounted(serial_no, tmpvar)
+		fcg.FreeTemporaryVariable(tmpvar)
+		return nil
 	case common.NameSysCall:
 		tmpvar := fcg.plantStackLength()
 		err := fcg.plantChildren(node)
@@ -229,7 +247,7 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		scope := node.Options[common.OptionScope]
 		switch scope {
 		case common.ValueInner, common.ValueOuter:
-			fcg.plantPushLocal(node.Options[common.OptionSerialNo])
+			fcg.plantPushLocalBySerialNo(node.Options[common.OptionSerialNo])
 		case common.ValueGlobal:
 			id_name := node.Options[common.OptionName]
 			fcg.plantPushGlobal(id_name)
@@ -292,6 +310,8 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 		} else {
 			return fmt.Errorf("apply with != 2 children not implemented")
 		}
+	case common.NameSeq:
+		return fcg.plantChildren(node)
 	case common.NameSetInProgress:
 		if len(node.Children) != 1 {
 			return fmt.Errorf("inprogress node must have exactly 1 child")
@@ -453,10 +473,39 @@ func (fcg *FnCodeGenState) plantSysCall(syscallName string, stackLengthTmpVar *T
 	fcg.instructions.Add(syscallNode)
 }
 
+func (fcg *FnCodeGenState) plantCheckCountIs1(stackLengthTmpVar *TemporaryVariable) {
+	checkCountNode := &common.Node{
+		Name: common.NameCheckCountIs1,
+		Options: map[string]string{
+			common.OptionOffset: stackLengthTmpVar.OffsetString(),
+		},
+		Children: []*common.Node{},
+	}
+	fcg.instructions.Add(checkCountNode)
+}
+
+func (fcg *FnCodeGenState) plantPushLocalBySerialNo(serialNo string) {
+	offset := fcg.offset(serialNo)
+	pushLocalNode := &common.Node{Name: common.NamePushLocal, Options: map[string]string{common.OptionOffset: fmt.Sprintf("%d", offset)}, Children: []*common.Node{}}
+	fcg.instructions.Add(pushLocalNode)
+}
+
 func (fcg *FnCodeGenState) plantPushLocal(serialNo string) {
 	offset := fcg.offset(serialNo)
 	pushLocalNode := &common.Node{Name: common.NamePushLocal, Options: map[string]string{common.OptionOffset: fmt.Sprintf("%d", offset)}, Children: []*common.Node{}}
 	fcg.instructions.Add(pushLocalNode)
+}
+
+func (fcg *FnCodeGenState) plantPopLocalBySerialNoCounted(serialNo string, stackLengthTmpVar *TemporaryVariable) {
+	fcg.plantCheckCountIs1(stackLengthTmpVar)
+	fcg.plantPopLocalBySerialNo(serialNo)
+}
+
+// Assumes that there is already a value on the stack that we want to pop into the local variable.
+func (fcg *FnCodeGenState) plantPopLocalBySerialNo(serialNo string) {
+	offset := fcg.offset(serialNo)
+	popLocalNode := &common.Node{Name: common.NamePopLocal, Options: map[string]string{common.OptionOffset: fmt.Sprintf("%d", offset)}, Children: []*common.Node{}}
+	fcg.instructions.Add(popLocalNode)
 }
 
 func (fcg *FnCodeGenState) plantPushGlobal(id_name string) {
