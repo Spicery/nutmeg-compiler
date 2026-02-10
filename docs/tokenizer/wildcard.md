@@ -26,4 +26,4 @@ the name of the form-part to the parser.
 What happens when a wildcard-label is used outside of a context which
 establishes the `expecting`? It is then _replaced_ by a paired replacement token
 and reclassified. A `:` would be replaced with the `=>` symbol, for example,
-which is the interpreted as an operator.
+which is then interpreted as an operator.
