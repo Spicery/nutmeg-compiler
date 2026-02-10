@@ -52,7 +52,7 @@ translated into an immediate return.
 
 ### Allocating Simple Labels
 
-The FnCodeGenState will need to be able to allocate a series of unique 
+The FnCodeGenState will need to be able to allocate a series of unique
 SimpleLabels. To do that it will need an auto-incrementing counter.
 
 ### Label Resolution
