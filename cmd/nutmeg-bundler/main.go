@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	pflag "github.com/spf13/pflag"
 
@@ -105,7 +106,21 @@ func main() {
 	if inputFile == "" {
 		input = os.Stdin
 	} else {
-		f, err := os.Open(inputFile)
+		// Clean the path to prevent directory traversal.
+		cleanPath := filepath.Clean(inputFile)
+
+		// Verify the file exists and is a regular file.
+		fileInfo, err := os.Stat(cleanPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to stat input file: %v\n", err)
+			os.Exit(1)
+		}
+		if !fileInfo.Mode().IsRegular() {
+			fmt.Fprintf(os.Stderr, "Error: input file is not a regular file\n")
+			os.Exit(1)
+		}
+
+		f, err := os.Open(cleanPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: failed to open input file: %v\n", err)
 			os.Exit(1)
