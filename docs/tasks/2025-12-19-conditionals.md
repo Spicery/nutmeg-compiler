@@ -29,13 +29,13 @@ type LabelType int
 
 const (
     SimpleLabel = iota
-    ContineLabel
+    ContinueLabel
     ReturnLabel
 )
 
 
-type struct Label {
-    labelType LabelType,
+type Label struct {
+    labelType LabelType
     labelText string
 }
 ```
