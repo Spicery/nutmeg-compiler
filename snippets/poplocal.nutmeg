@@ -1,4 +1,9 @@
-def foo(x):
+def poplocal(x):
     y := x + 1
     (x, y)
+enddef
+
+[main]
+def main():
+    println(poplocal())
 enddef

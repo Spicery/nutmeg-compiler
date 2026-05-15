@@ -92,6 +92,10 @@ func NewCheckBool(offset int) Instruction {
 	return Instruction{Type: "check.bool", Index: &offset}
 }
 
+func NewCheckCountIs1(offset int) Instruction {
+	return Instruction{Type: "check.count.is.1", Index: &offset}
+}
+
 // NewLabel creates a label instruction.
 func NewLabel(label string) Instruction {
 	return Instruction{Type: "label", StrValue: &label}

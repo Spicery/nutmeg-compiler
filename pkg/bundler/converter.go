@@ -154,6 +154,13 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 	case common.NameErase:
 		return []Instruction{NewErase()}, nil
 
+	case common.NameCheckCountIs1:
+		offset, err := getIntOption(node, common.OptionOffset)
+		if err != nil {
+			return nil, fmt.Errorf("check.count.is.1 missing offset: %w", err)
+		}
+		return []Instruction{NewCheckCountIs1(offset)}, nil
+
 	case common.NameCheckBool:
 		offset, err := getIntOption(node, common.OptionOffset)
 		if err != nil {
