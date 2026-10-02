@@ -5,5 +5,5 @@ enddef
 
 [main]
 def main():
-    println(poplocal())
+    println(poplocal(99))
 enddef

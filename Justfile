@@ -88,3 +88,18 @@ jj:
 
 hello:
     cat snippets/helloworld.nutmeg | go run ./cmd/nutmeg-common | go run ./cmd/nutmeg-resolver | go run ./cmd/nutmeg-codegen | go run ./cmd/nutmeg-bundler/ --bundle helloworld.bundle
+
+# Compile every snippet into a bundle in _bundles/, continuing past failures.
+bundles:
+    mkdir -p _bundles bin
+    rm -f _bundles/*.bundle
+    go build -o bin/nutmeg-compiler ./cmd/nutmeg-compiler
+    @failed=0; \
+    for f in snippets/*.nutmeg; do \
+        name=$(basename "$f" .nutmeg); \
+        if ! ./bin/nutmeg-compiler -i "$f" -b "_bundles/$name.bundle"; then \
+            echo "FAILED: $f" >&2; \
+            failed=$((failed + 1)); \
+        fi; \
+    done; \
+    echo "Bundles done; $failed failure(s)."
