@@ -898,6 +898,18 @@ func TestExceptionTokens(t *testing.T) {
 			name:  "Invalid balanced ternary wrong radix",
 			input: "4t0T1",
 		},
+		{
+			name:  "Invalid operator range with comparison",
+			input: "..<=",
+		},
+		{
+			name:  "Invalid operator assignment with sign",
+			input: ":=-",
+		},
+		{
+			name:  "Invalid operator range with sign",
+			input: "..<-",
+		},
 	}
 
 	for _, tt := range tests {

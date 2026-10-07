@@ -484,7 +484,10 @@ func (t *Tokenizer) matchCustomRules() *common.Token {
 			t.advance(len(text))
 			return common.NewToken(text, common.VariableTokenType, span)
 		}
-		return nil // No matching custom rule
+		// The whole run of operator characters has been consumed by the regex but is not a
+		// defined operator. Flag the entire run as invalid rather than splitting it, which
+		// could make part of an invalid run look like a valid operator.
+		return t.createExceptionToken(text, "invalid operator")
 	}
 
 	return t.lookupText(&entry, span, text)
