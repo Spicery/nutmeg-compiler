@@ -131,7 +131,8 @@ func NewIfThenElse(thenLabel string, elseLabel string) Instruction {
 	return Instruction{Type: "if.then.else", Name: &thenLabel, StrValue: &elseLabel}
 }
 
-// NewInProgress creates an in.progress instruction.
-func NewInProgress(name string) Instruction {
-	return Instruction{Type: "in.progress", Name: &name}
-}
+// TODO: Remove commented-out code.
+// // NewInProgress creates an in.progress instruction.
+// func NewInProgress(name string) Instruction {
+// 	return Instruction{Type: "in.progress", Name: &name}
+// }

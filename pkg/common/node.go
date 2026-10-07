@@ -58,7 +58,9 @@ const NameStackLength = "stack.length"
 const NameCallGlobalCounted = "call.global.counted"
 const NameAnnotations = "annotations"
 const NameSetInProgress = "setinprogress"
-const NameInProgress = "in.progress"
+
+// TODO: Remove commented-out code.
+// const NameInProgress = "in.progress"
 const NameDone = "done"
 const NameLabel = "label"
 const NameGoto = "goto"

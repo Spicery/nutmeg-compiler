@@ -213,12 +213,13 @@ func collectInstructions(node *common.Node) ([]Instruction, error) {
 		}
 		return []Instruction{NewIfThenElse(thenLabel, elseLabel)}, nil
 
-	case common.NameInProgress:
-		name, err := getStringOption(node, common.OptionName)
-		if err != nil {
-			return nil, fmt.Errorf("in.progress missing name: %w", err)
-		}
-		return []Instruction{NewInProgress(name)}, nil
+	// TODO: Remove commented-out code.
+	// case common.NameInProgress:
+	// 	name, err := getStringOption(node, common.OptionName)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("in.progress missing name: %w", err)
+	// 	}
+	// 	return []Instruction{NewInProgress(name)}, nil
 
 	case common.NameSeq, common.NameArguments:
 		// For container nodes (like <seq>, <arguments>, etc.), recursively collect instructions from children.

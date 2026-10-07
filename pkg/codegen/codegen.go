@@ -317,7 +317,8 @@ func (fcg *FnCodeGenState) plantInstructions(node *common.Node) error {
 			return fmt.Errorf("inprogress node must have exactly 1 child")
 		}
 		name := node.Options[common.OptionName]
-		fcg.plantInProgress(name)
+		// TODO: Remove commented-out code.
+		// fcg.plantInProgress(name)
 		tmpvar := fcg.plantStackLength()
 		err := fcg.plantInstructions(node.Children[0])
 		if err != nil {
@@ -376,15 +377,16 @@ func (fcg *FnCodeGenState) plantChildren(node *common.Node) error {
 	return nil
 }
 
-func (fcg *FnCodeGenState) plantInProgress(name string) {
-	fcg.instructions.Add(&common.Node{
-		Name: common.NameInProgress,
-		Options: map[string]string{
-			common.OptionName: name,
-		},
-		Children: []*common.Node{},
-	})
-}
+// TODO: Remove commented-out code.
+// func (fcg *FnCodeGenState) plantInProgress(name string) {
+// 	fcg.instructions.Add(&common.Node{
+// 		Name: common.NameInProgress,
+// 		Options: map[string]string{
+// 			common.OptionName: name,
+// 		},
+// 		Children: []*common.Node{},
+// 	})
+// }
 
 func (fcg *FnCodeGenState) plantDone(name string, stackLengthTmpVar *TemporaryVariable) {
 	fcg.instructions.Add(&common.Node{
