@@ -49,6 +49,12 @@ fmt-check:
 tidy:
     go mod tidy
 
+clean:
+    rm -rf bin _bundles
+    rm -f bin
+
+rebuild: clean build bundles
+
 build:
     mkdir -p bin
     go build -o bin/nutmeg-tokenizer ./cmd/nutmeg-tokenizer
